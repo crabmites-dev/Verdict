@@ -1,5 +1,6 @@
 import pool from "../config/db";
 import bcrypt from 'bcrypt'
+import { OAuth2Client } from "google-auth-library";
 import jwt from 'jsonwebtoken' 
 
 const router = express()
@@ -16,6 +17,66 @@ const generateToken = (id) => {
 }
 
 const generateResetCode = () => { String(Math.floor(100000 + Math.random() * 900000)) }
+
+
+const clientGoogle = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
+
+export const googleLogin = async (req, res) => {
+    const {idToken} = req.body
+
+    if(!idToken) {
+        return res.status(400).json({message: 'Le token google est requis'})
+
+        
+        try {
+        const ticket = clientGoogle.verifyIdToken( {
+            idToken: idToken, 
+            audience: process.env.GOOGLE_CLIENT_ID
+        })
+    
+        const payload = await ticket.getPayload()
+    
+        const {email, name} = payload
+    
+        const cleanEmail = email.trim().toLowerCase()
+    
+        const userResult = pool.query('SELECT id, name, email, role FROM users WHERE email = $1', [cleanEmail])
+    
+        let user
+    
+        if(userResult.rows.lenght === 0) {
+            const randomPassword = bcrypt.hash(Math.random().toString(36), SALT_ROUNDS)
+        }
+    
+        const insertUser = 'INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING *'
+    
+        const newUser = await pool.query(insertUser, [name, cleanEmail, randomPassword, 'public'])
+    
+        user = newUser.rows[0]
+    
+        } else {
+            user = userResult.rows[0]
+        }
+    
+        const token = generateToken(user)
+        res.cookie('token', token, cookieOption)
+    
+        return res.status(200).json({
+            message: 'Connecté avec succès !',
+            token,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role
+            }
+        })
+        
+    } catch (error) {
+        console.error('Google Auth Error:', error);
+        return res.status(400).json({ message: 'Invalid Google token or authentication failed.' });
+    }
+}
 
 const register = async (req, res) => {
     const name = req.body.name?.trim()
