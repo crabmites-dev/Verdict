@@ -27,7 +27,7 @@ export const googleLogin = async (req, res) => {
     if(!idToken) {
         return res.status(400).json({message: 'Le token google est requis'})
 
-        
+    }
         try {
         const ticket = clientGoogle.verifyIdToken( {
             idToken: idToken, 
@@ -45,8 +45,8 @@ export const googleLogin = async (req, res) => {
         let user
     
         if(userResult.rows.lenght === 0) {
-            const randomPassword = bcrypt.hash(Math.random().toString(36), SALT_ROUNDS)
-        }
+            
+        const randomPassword = bcrypt.hash(Math.random().toString(36), 10)
     
         const insertUser = 'INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING *'
     
@@ -78,7 +78,7 @@ export const googleLogin = async (req, res) => {
     }
 }
 
-const register = async (req, res) => {
+export const register = async (req, res) => {
     const name = req.body.name?.trim()
     const email = req.body.email?.trim().toLowerCase()
     const password = req.body.password
@@ -120,7 +120,7 @@ const register = async (req, res) => {
 
 }
 
-const login = async (req, res) => {
+export const login = async (req, res) => {
     const email = req.body.email?.trim()
     const password = req.body.password
 
@@ -154,7 +154,7 @@ const login = async (req, res) => {
     }
 } 
 
-const getMe = async (req,res) => {
+export const getMe = async (req,res) => {
     try {
         const userResult = await pool.query('SELECT name, email FROM users WHERE id = $1', [req.user.id])
         if(userResult.rows.length === 0) {
