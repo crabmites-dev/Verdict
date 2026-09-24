@@ -1,6 +1,6 @@
 import express from 'express'
 import { googleLogin, register, login, forgotPassword, resetPassword, logout, getMe } from "../controllers/authController";
-import { protect } from '../middlewares/authMiddleware';
+import { protect, authorize } from '../middlewares/authMiddleware';
 
 const router = express.Router()
 
