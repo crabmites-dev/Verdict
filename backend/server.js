@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser'
 import authRoutes from './routes/authRoutes.js'
 import eventRoutes from './routes/eventRoutes.js'
 import juryRoutes from './routes/juryRoutes.js'
+import publicVoteRoute from './routes/publicVoteRoute.js'
 
 const app = express()
 
@@ -33,6 +34,7 @@ app.get('/api/status', async (req, res) => {
 app.use('/api/auth', authRoutes)
 app.use('/api/events', eventRoutes)
 app.use('/api/jury-panel', juryRoutes)
+app.use('/public', publicVoteRoute)
 
 const PORT = process.env.DB_PORT || 5000
 
