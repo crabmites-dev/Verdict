@@ -11,6 +11,6 @@ router.post('forgotPassword', forgotPassword)
 router.post('resetPassword', resetPassword)
 router.post('logout', logout)
 
-router.get('/getMe', getMe)
+router.get('/getMe', protect, getMe)
 
 export default router;

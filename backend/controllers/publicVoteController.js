@@ -56,3 +56,56 @@ export const getActivePublicPolls = async (req, res) => {
         });
     }
 }
+
+export const castPublicVote = async (req, res) => {
+    const {category_id, candidate_id, vote_identifier} = req.body
+
+    if(!category_id || !candidate_id || vote_identifier) {
+        return res.status(400).json({message: 'Il y\'a un champs de vote manquant. Tous les champs sont requis !'})
+    }
+
+    try {
+        const eventCheckQuery = `
+        SELECT e.event_id, e.start_date, e.end_date 
+        FROM categories c
+        INNER JOIN events e ON c.event_id = e.id
+        WHERE c.id = $1
+        `
+
+        const eventCheck = await pool.query(eventCheckQuery, [category_id])
+
+        if(eventCheck.rows.length === 0) {
+            return res.status(404).json({message: 'La categorie ou l\'vennement scpecifié n\'existe pas'})
+        }
+
+        const {status, start_date, end_date} = eventCheck.rows[0]
+
+        const now = new Date()
+
+        if(status != 'active' || now < new Date(start_date) || now > new Date(end_date)) {
+            return res.status(400).json({message: 'Le vote est actuellement clos ou pas encore active pour l\'evenement'})
+        }
+
+        const insertVote = `
+            INSERT INTO public_vote (category_id, candidate_id, vote_identifier)
+            VALUES ($1, $2, $3) 
+            RETURNING id, category_id, candidate_id, vote_identifier, voted_at
+        `
+
+        const {rows} = await pool.query(insertVote, [category_id, candidate_id, vote_identifier])
+
+        return res.status(200).json({message: 'Votre vote a été enrigistré avec succès et securisé'})
+    } catch (error) {
+        if(error.code === '23505'){
+            return res.status(409).json({message: 'Prévention de la fraude : vous avez déjà voté dans cette catégorie'})
+        }
+
+        if(error.code === '23503') {
+            return res.status(404).json({message: 'L\' id du candidat est invalide'})
+        }
+
+        console.error('Une erreur est survenue : ', error)
+        return res.status(500).json({ message: 'Une erreur serveeur est survenue.' });
+    }
+    
+}
