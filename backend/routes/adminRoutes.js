@@ -1,10 +1,10 @@
-import express from 'express'
-import { getStats, getAuditLog } from '../controllers/adminController'
-import { protect, authorize } from '../middlewares/authMiddleware'
+import express from 'express';
+import { getStats, getAuditLog } from '../controllers/adminController.js';
+import { protect, authorize } from '../middlewares/authMiddleware.js';
 
-const router = express.Router()
+const router = express.Router();
 
-router('/dashboard-stats', protect, authorize('admin'), getStats)
-router('/audit-log', protect, authorize('admin'), getAuditLog)
+router.get('/dashboard-stats', protect, authorize('admin'), getStats);
+router.get('/audit-log', protect, authorize('admin'), getAuditLog);
 
-export default router
+export default router;

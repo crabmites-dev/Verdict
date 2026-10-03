@@ -1,5 +1,5 @@
 import express from 'express'
-import { getActivePublicPolls, castPublicVote } from '../controllers/publicVoteController'
+import { getActivePublicPolls, castPublicVote } from '../controllers/publicVoteController.js'
 
 const router = express.Router()
 

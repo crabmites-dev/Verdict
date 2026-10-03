@@ -1,16 +1,16 @@
-import express from 'express'
-import { googleLogin, register, login, forgotPassword, resetPassword, logout, getMe } from "../controllers/authController";
-import { protect, authorize } from '../middlewares/authMiddleware';
+import express from 'express';
+import { googleLogin, register, login, forgotPassword, resetPassword, logout, getMe } from "../controllers/authController.js";
+import { protect } from '../middlewares/authMiddleware.js';
 
-const router = express.Router()
+const router = express.Router();
 
-router.post('/googleLogin', googleLogin)
-router.post('/register', register)
-router.post('/login', login)
-router.post('forgotPassword', forgotPassword)
-router.post('resetPassword', resetPassword)
-router.post('logout', logout)
+router.post('/googleLogin', googleLogin);
+router.post('/register', register);
+router.post('/login', login);
+router.post('/forgotPassword', forgotPassword);
+router.post('/resetPassword', resetPassword);
+router.post('/logout', logout);
 
-router.get('/getMe', protect, getMe)
+router.get('/getMe', protect, getMe);
 
 export default router;

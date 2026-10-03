@@ -36,7 +36,8 @@ export const exportCategoryCSV = async (req, res) => {
 
         // Écriture des lignes de données
         rows.forEach(row => {
-            res.write(`${row.rank_position};"${row.candidate_name.replace(/"/g, '""')}";${row.jury_score};${row.public_score};${row.final_score}\n`);
+            const escapedName = (row.candidate_name || '').replace(/"/g, '""');
+            res.write(`${row.rank_position};"${escapedName}";${row.jury_score};${row.public_score};${row.final_score}\n`);
         });
 
         return res.end();
@@ -127,11 +128,11 @@ export const exportCategoryPDF = async (req, res) => {
                 doc.font('Helvetica').fillColor('#2D3748');
             }
 
-            doc.text(row.rank_position, 50, yPosition);
-            doc.text(row.candidate_name, 100, yPosition);
-            doc.text(row.jury_score, 280, yPosition);
-            doc.text(`${row.public_score} %`, x => 380, yPosition);
-            doc.text(row.final_score, 480, yPosition);
+            doc.text(String(row.rank_position), 50, yPosition);
+            doc.text(String(row.candidate_name || ''), 100, yPosition);
+            doc.text(String(row.jury_score ?? '0.00'), 280, yPosition);
+            doc.text(`${row.public_score ?? '0.00'} %`, 380, yPosition);
+            doc.text(String(row.final_score ?? '0.00'), 480, yPosition);
 
             yPosition += 25;
         });

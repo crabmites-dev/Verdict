@@ -1,10 +1,10 @@
-import { categoryResults, getCategoryResults } from "../controllers/resultController";
-import express from 'express'
-import { protect, authorize } from "../middlewares/authMiddleware";
+import { categoryResults, getCategoryResults } from "../controllers/resultController.js";
+import express from 'express';
+import { protect, authorize } from "../middlewares/authMiddleware.js";
 
-const router = express.Router()
+const router = express.Router();
 
-router.post('/results/:categoryId', protect, authorize('admin', 'jury'), categoryResults)
-router.post('/category/:categoryId', protect, getCategoryResults)
+router.post('/calculate/:categoryId', protect, authorize('admin', 'jury'), categoryResults);
+router.get('/category/:categoryId', protect, getCategoryResults);
 
-export default router
+export default router;

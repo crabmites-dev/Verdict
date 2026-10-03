@@ -1,33 +1,33 @@
-import pool from "../config/db";
+import pool from "../config/db.js";
 
 export const getStats = async (req, res) => {
-     try {
-       const eventsQuery = `
+    try {
+        const eventsQuery = `
             SELECT status, COUNT(*) AS count
             FROM events 
             GROUP BY status
-       ` 
+        `;
 
-       const totalPublicVote = 'SELECT COUNT(*) AS total_votes FROM public_votes'
+        const totalPublicVote = 'SELECT COUNT(*) AS total_votes FROM public_votes';
 
-       const juryActivity = `
+        const juryActivity = `
             SELECT
-                (SELECT COUNT(*) FROM jury_rating) AS submitted_ratings,
+                (SELECT COUNT(*) FROM jury_ratings) AS submitted_ratings,
                 (SELECT COUNT(*) FROM users WHERE role = 'jury') AS total_jurors
-       `
+        `;
 
-       const eventsResults = await pool.query(eventsQuery)
-       const publicVotesResults = await pool.query(totalPublicVote)
-       const juryActivityResult = await pool.query(juryActivity)
+        const eventsResult = await pool.query(eventsQuery);
+        const publicVotesResult = await pool.query(totalPublicVote);
+        const juryActivityResult = await pool.query(juryActivity);
     
-       return res.status(200).json({
+        return res.status(200).json({
             message: 'Dashboard statistics fetched successfully.',
             data: {
                 event_distribution: eventsResult.rows,
-                total_public_votes: parseInt(publicVotesResult.rows[0].total_votes, 10),
+                total_public_votes: parseInt(publicVotesResult.rows[0]?.total_votes || 0, 10),
                 jury_activity: {
-                    submitted_ratings: parseInt(juryActivityResult.rows[0].submitted_ratings, 10),
-                    total_registered_jurors: parseInt(juryActivityResult.rows[0].total_jurors, 10)
+                    submitted_ratings: parseInt(juryActivityResult.rows[0]?.submitted_ratings || 0, 10),
+                    total_registered_jurors: parseInt(juryActivityResult.rows[0]?.total_jurors || 0, 10)
                 }
             }
         });
@@ -36,7 +36,7 @@ export const getStats = async (req, res) => {
         console.error('Get dashboard stats error:', error);
         return res.status(500).json({ message: 'Server error while compiling dashboard metrics.' });
     }
-}
+};
 
 export const getAuditLog = async (req, res) => {
     try {

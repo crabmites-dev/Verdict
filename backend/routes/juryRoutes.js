@@ -1,19 +1,19 @@
-import express from 'express'
-import { createCategorie, getCategoriesByEvents, createCandidate, getCandidateByEvent } from '../controllers/juryController'
-import { protect, authorize } from '../middlewares/authMiddleware'
-import { auth } from 'google-auth-library'
-import { createCriterion, getCriteriaByCategorie, submitJuryRating } from '../controllers/ratingController'
-const router = express.Router()
+import express from 'express';
+import { createCategorie, getCategoriesByEvents, createCandidate, getCandidateByEvent } from '../controllers/juryController.js';
+import { protect, authorize } from '../middlewares/authMiddleware.js';
+import { createCriterion, getCriteriaByCategorie, submitJuryRating } from '../controllers/ratingController.js';
 
-router.post('/categories', protect, authorize('admin'), createCategorie)
-router.post('/candidates', protect, auth('admin'), createCandidate)
+const router = express.Router();
 
-router.get('/categories/event/:eventId', protect, getCategoriesByEvents)
-router.get('/candidates/event/:eventId', protect, getCandidateByEvent)
+router.post('/categories', protect, authorize('admin'), createCategorie);
+router.post('/candidates', protect, authorize('admin'), createCandidate);
 
-router.post('/criteria', protect, authorize('admin', createCriterion))
-router.post('/criteria/category/:categoryId', getCriteriaByCategorie)
+router.get('/categories/event/:eventId', protect, getCategoriesByEvents);
+router.get('/candidates/event/:eventId', protect, getCandidateByEvent);
 
-router.rating('/ratings', protect, authorise('jury', 'admin', submitJuryRating))
+router.post('/criteria', protect, authorize('admin'), createCriterion);
+router.get('/criteria/category/:categoryId', protect, getCriteriaByCategorie);
 
-export default router
+router.post('/ratings', protect, authorize('jury', 'admin'), submitJuryRating);
+
+export default router;
