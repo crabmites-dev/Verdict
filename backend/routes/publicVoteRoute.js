@@ -7,4 +7,4 @@ router.get('/active-polls', getActivePublicPolls)
 
 router.post('/vote', castPublicVote)
 
-export default router
+export default router 
