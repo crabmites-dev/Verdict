@@ -5,7 +5,7 @@ export const createCategorie = async (req, res) => {
     const name = req.body.name?.trim();
 
     if (!eventId || !vote_mode || !name) {
-        return res.status(400).json({ message: 'Veuillez remplir tous les champs obligatoires' });
+        return res.status(400).json({ message: 'Veuillez remplir tous les champs obligatoires', debugReceived: { eventId, name, vote_mode } });
     }
 
     try {

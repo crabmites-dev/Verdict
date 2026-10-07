@@ -3,14 +3,14 @@ import { createEvent, getAllEvents, updateEvents, closeEvents } from "../control
 import { protect, authorize } from '../middlewares/authMiddleware.js';
 
 const router = express.Router()
-
+/*
 router.post('/create-event', protect, authorize('admin'), createEvent)
 router.put('/:id/update-event', protect, authorize('admin'), updateEvents)
 router.post('/:id/close-event', protect, authorize('admin'), closeEvents)
 
 router.get('/get-all-events', protect, getAllEvents)
- 
-/*
+ */
+
 router.route ('/')
 .get(protect, getAllEvents)
 .post(protect, authorize('admin'), createEvent)
@@ -20,5 +20,5 @@ router.route('/:id')
 
 router.route('/:close')
 .patch(protect, authorize('admin'), closeEvents)
-*/
+
 export default router;
