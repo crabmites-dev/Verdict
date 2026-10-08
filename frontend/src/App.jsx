@@ -1,8 +1,18 @@
 import React from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from './Login.jsx'
+import Register from "./Register.jsx";
 
 function App() {
-  return <Login />
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Navigate to='/login'/>} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+      </Routes>
+    </BrowserRouter>
+  )
 }
 
 export default App 
