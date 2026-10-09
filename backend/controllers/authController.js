@@ -45,8 +45,9 @@ export const googleLogin = async (req, res) => {
 
         if (userResult.rows.length === 0) {
             const randomPassword = await bcrypt.hash(Math.random().toString(36), 10);
+            // Toute nouvelle organisation s'enregistrant devient Administrateur de son espace
             const insertUser = 'INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role';
-            const newUser = await pool.query(insertUser, [name, cleanEmail, randomPassword, 'public']);
+            const newUser = await pool.query(insertUser, [name, cleanEmail, randomPassword, 'admin']);
             user = newUser.rows[0];
         } else {
             user = userResult.rows[0];
@@ -72,21 +73,32 @@ export const googleLogin = async (req, res) => {
     }
 };
 
+/**
+ * @desc    Inscription d'un nouvel espace Administrateur (Institution / Organisation)
+ *          Les jurés sont invités par l'admin, et les votants n'ont pas de compte.
+ * @route   POST /api/auth/register
+ */
 export const register = async (req, res) => {
     const name = req.body.name?.trim();
     const email = req.body.email?.trim().toLowerCase();
     const password = req.body.password;
-    const role = req.body.role || 'public';
+    
+    // Sécurité SaaS : l'inscription publique crée obligatoirement un compte 'admin' d'organisation
+    const role = 'admin';
 
     if (!name || !email || !password) {
         return res.status(400).json({ message: 'Veuillez remplir tous les champs obligatoires.' });
+    }
+
+    if (password.length < 6) {
+        return res.status(400).json({ message: 'Le mot de passe doit comporter au moins 6 caractères.' });
     }
 
     try {
         const userExist = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
 
         if (userExist.rows.length > 0) {
-            return res.status(409).json({ message: 'L\'utilisateur existe déjà.' });
+            return res.status(409).json({ message: 'Un compte avec cette adresse e-mail existe déjà.' });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -101,7 +113,8 @@ export const register = async (req, res) => {
         res.cookie('token', token, cookieOption);
 
         return res.status(201).json({
-            message: 'Utilisateur créé avec succès.',
+            message: 'Espace administrateur créé avec succès.',
+            token,
             user: {
                 id: createdUser.id,
                 name: createdUser.name,
@@ -196,10 +209,8 @@ export const forgotPassword = async (req, res) => {
             [userId, email, codeHash, expiresAt]
         );
 
-        // Code généré prêt à être expédié par mail
         return res.status(200).json({ 
             message: 'Si ce compte existe, un code de réinitialisation a été généré.',
-            // Si en dev, on peut fournir le code pour faciliter les tests
             ...(process.env.NODE_ENV !== 'production' && { devResetCode: code })
         });
 

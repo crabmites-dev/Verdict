@@ -1,48 +1,110 @@
-import { useState } from "react";
-import {Lock, Mail, Shield, AlertCircle, Eye, EyeOff, 
-    ArrowRight, ShieldCheck, Fingerprint, 
-  Sparkles, CheckCircle2, Building2, User
-} from 'lucide-react'
+import { useState, useEffect } from "react";
+import { 
+  Lock, 
+  Mail, 
+  AlertCircle, 
+  Eye, 
+  EyeOff, 
+  ArrowRight, 
+  ShieldCheck, 
+  Fingerprint, 
+  Sparkles, 
+  CheckCircle2, 
+  Building2, 
+  User,
+  Vote
+} from 'lucide-react';
 import axios from "axios";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function Register() {
-    const [name, setName] = useState('')
-    const [email, setEmail] = useState('')
-    const [password, setPassword] = useState('')
-    const [role, setRole] = useState('public')
-    const [success, setSuccess] = useState('')
-    const [error, setError] = useState('')
-    const [loading, setLoading] = useState(false)
-    const [showPassword, setShowPassword] = useState(false)
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [success, setSuccess] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault()
-        setError('')
-        setSucces('')
+  const navigate = useNavigate();
 
-        if(!name.trim() || !email.trim() || !password) {
-            setError('Veillez renseigner tous les champs obligatoires !')
-            return
+  // Initialisation de Google Identity Services pour inscription
+  useEffect(() => {
+    const clientId = "517412292411-q9fr8gpn78s5ce7f1k7494tuh2gdiscv.apps.googleusercontent.com";
+    if (window.google?.accounts?.id) {
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: async (response) => {
+          try {
+            setLoading(true);
+            setError("");
+            const res = await axios.post(
+              "http://localhost:5000/api/auth/googleLogin",
+              { idToken: response.credential },
+              { withCredentials: true }
+            );
+            setSuccess("Espace créé avec succès via Google ! Redirection...");
+            localStorage.setItem("verdict_user", JSON.stringify(res.data?.user));
+            setTimeout(() => {
+              navigate("/admin");
+            }, 1000);
+          } catch (err) {
+            setError(err.response?.data?.message || "Échec de l'inscription avec Google.");
+          } finally {
+            setLoading(false);
+          }
         }
-        try {
-            setLoading(true)
-            await axios.post('http://localhost:5000/api/auth/register', {name, email, password, role}, {withCredentials: true} )
-            setSucces('Votre compte a été créé avec succès !')
+      });
+    }
+  }, []);
 
-            setName('')
-            setEmail('')
-            setPassword('')
-            setRole('')
-        } catch (err) {
-            const serverMessage = err.response?.data?.message
-            setError(serverMessage || 'Une erreur est survenue lors de la création de votre compte')
-        } finally {
-            setLoading(false)
-        }
+  const handleGoogleSignup = () => {
+    if (window.google?.accounts?.id) {
+      window.google.accounts.id.prompt();
+    } else {
+      setError("Le service Google Identity est en cours de chargement. Veuillez patienter ou réessayer.");
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (!name.trim() || !email.trim() || !password) {
+      setError('Veuillez renseigner tous les champs obligatoires.');
+      return;
     }
 
-    return (
+    if (password.length < 6) {
+      setError('Le mot de passe doit comporter au moins 6 caractères.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await axios.post(
+        'http://localhost:5000/api/auth/register', 
+        { name: name.trim(), email: email.trim(), password }, 
+        { withCredentials: true } 
+      );
+
+      setSuccess('Espace organisateur créé avec succès ! Redirection vers la connexion...');
+      localStorage.setItem("verdict_user", JSON.stringify(res.data?.user));
+
+      setTimeout(() => {
+        navigate('/login');
+      }, 1500);
+
+    } catch (err) {
+      const serverMessage = err.response?.data?.message;
+      setError(serverMessage || 'Une erreur est survenue lors de la création de votre espace.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
     <div className="min-h-screen w-full flex bg-base-200 text-base-content selection:bg-primary selection:text-primary-content relative overflow-hidden font-sans">
       
       {/* ======================================================== */}
@@ -72,15 +134,15 @@ export default function Register() {
           
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold mb-6">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Enregistrement sécurisé & Accréditations</span>
+            <span>Création d'Espace Institutionnel</span>
           </div>
 
           <h2 className="text-3xl xl:text-4xl font-extrabold tracking-tight text-base-content leading-tight font-display">
-            Rejoignez l'infrastructure de délibération <span className="text-primary underline decoration-primary/30 decoration-wavy">académique</span>.
+            Déployez des scrutins sécurisés pour votre <span className="text-primary underline decoration-primary/30 decoration-wavy">organisation</span>.
           </h2>
 
           <p className="mt-4 text-base-content/70 text-sm xl:text-base leading-relaxed">
-            Créez votre identité numérique pour participer aux scrutins ou administrer les collèges de vote de votre établissement.
+            Créez votre compte administrateur pour configurer vos élections, inviter vos jurys de délibération et gérer les émargements sans forcer les votants à créer un compte.
           </p>
 
           {/* Cartes d'indicateurs de confiance */}
@@ -88,20 +150,20 @@ export default function Register() {
             <div className="p-4 rounded-2xl bg-base-200/60 border border-base-300 shadow-xs">
               <div className="flex items-center gap-2 text-primary text-xs font-bold mb-1.5">
                 <ShieldCheck className="w-4 h-4" />
-                Accès Partitionné
+                Gouvernance Dédiée
               </div>
               <p className="text-xs text-base-content/60 leading-relaxed">
-                Rôles stricts pour jurés, administrateurs et votants du grand public.
+                Contrôle total sur les collèges électoraux, les jurys et les dates de scrutin.
               </p>
             </div>
 
             <div className="p-4 rounded-2xl bg-base-200/60 border border-base-300 shadow-xs">
               <div className="flex items-center gap-2 text-success text-xs font-bold mb-1.5">
                 <CheckCircle2 className="w-4 h-4" />
-                Vérification d'Origine
+                Émargement Simplifié
               </div>
               <p className="text-xs text-base-content/60 leading-relaxed">
-                Validation stricte compatible avec les emails institutionnels.
+                Importation de listes ou scrutins ouverts avec garanties anti-fraude.
               </p>
             </div>
           </div>
@@ -135,15 +197,34 @@ export default function Register() {
         {/* Carte Formulaire Centrale */}
         <div className="w-full max-w-md mx-auto my-auto py-4">
           
+          {/* Note de rappel pour les électeurs */}
+          <div className="mb-6 p-4 rounded-2xl bg-base-100 border border-base-300 flex items-start gap-3 shadow-xs">
+            <div className="h-8 w-8 rounded-xl bg-base-200 text-base-content/70 flex items-center justify-center shrink-0 mt-0.5">
+              <Vote className="w-4 h-4 text-primary" />
+            </div>
+            <div className="flex-1 text-xs">
+              <span className="font-bold text-base-content block mb-0.5">
+                Vous êtes électeur ou étudiant ?
+              </span>
+              <span className="text-base-content/60 block leading-relaxed">
+                Aucun compte n'est nécessaire pour voter. Ce formulaire est réservé aux organisateurs créant un espace de scrutin.
+              </span>
+            </div>
+          </div>
+
           <div className="bg-base-100 p-8 sm:p-10 rounded-3xl border border-base-300 shadow-xl shadow-base-content/5">
             
             {/* Titre & Sous-titre */}
             <div className="mb-6 text-center sm:text-left">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-base-200 text-[11px] font-semibold text-base-content/70 mb-2">
+                <Building2 className="w-3.5 h-3.5 text-primary" />
+                <span>Nouveau Compte Organisateur</span>
+              </div>
               <h1 className="text-2xl font-bold tracking-tight text-base-content font-display">
-                Création de profil
+                Créer un espace
               </h1>
-              <p className="text-xs sm:text-sm text-base-content/60 mt-1.5">
-                Inscrivez-vous pour accéder à vos droits de vote ou de notation.
+              <p className="text-xs sm:text-sm text-base-content/60 mt-1">
+                Enregistrez votre institution pour administrer vos scrutins.
               </p>
             </div>
 
@@ -162,20 +243,39 @@ export default function Register() {
               </div>
             )}
 
+            {/* Bouton Google SSO pour Inscription */}
+            <button
+              type="button"
+              onClick={handleGoogleSignup}
+              disabled={loading}
+              className="btn btn-outline border-base-300 hover:border-base-content/20 hover:bg-base-200/60 text-base-content w-full rounded-2xl flex items-center justify-center gap-3 font-medium text-sm transition-all shadow-xs normal-case h-11 min-h-[44px] cursor-pointer"
+            >
+              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.3 1 3.4 3.7 1.4 7.6l3.8 2.9C6.1 7.8 8.8 5 12 5z" />
+                <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.4c-.3 1.5-1.1 2.7-2.4 3.6l3.7 2.9c2.2-2 3.8-5 3.8-8.7z" />
+                <path fill="#FBBC05" d="M5.2 10.5c-.2-.7-.3-1.4-.3-2.2s.1-1.5.3-2.2L1.4 3.2C.5 5 0 7.1 0 9.3s.5 4.3 1.4 6.1l3.8-2.9z" />
+                <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.2 0-5.9-2.2-6.8-5.2L1.4 16C3.4 19.9 7.3 23 12 23z" />
+              </svg>
+              <span>S'inscrire avec Google Workspace</span>
+            </button>
+
+            {/* Séparateur */}
+            <div className="divider text-[11px] text-base-content/40 uppercase tracking-widest my-5">ou avec e-mail</div>
+
             {/* Formulaire classique */}
             <form onSubmit={handleSubmit} className="space-y-4">
               
-              {/* Nom complet */}
+              {/* Nom de l'organisation / Administrateur */}
               <div className="form-control space-y-1.5">
                 <label className="text-xs font-semibold text-base-content/80">
-                  Nom complet
+                  Nom de l'organisation ou du responsable
                 </label>
                 <div className="relative flex items-center">
                   <User className="w-4 h-4 text-base-content/40 absolute left-3.5 pointer-events-none" />
                   <input
                     type="text"
                     required
-                    placeholder="Ex: Dr. Jean Dupont"
+                    placeholder="Ex: Université de Paris - BDE"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="input input-bordered w-full pl-10 rounded-2xl text-sm focus:input-primary transition-all bg-base-100 h-11"
@@ -193,7 +293,7 @@ export default function Register() {
                   <input
                     type="email"
                     required
-                    placeholder="nom@universite.edu"
+                    placeholder="direction@organisation.edu"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="input input-bordered w-full pl-10 rounded-2xl text-sm focus:input-primary transition-all bg-base-100 h-11"
@@ -201,36 +301,17 @@ export default function Register() {
                 </div>
               </div>
 
-              {/* Type de Profil / Rôle */}
-              <div className="form-control space-y-1.5">
-                <label className="text-xs font-semibold text-base-content/80">
-                  Type d'accréditation requis
-                </label>
-                <div className="relative flex items-center">
-                  <Shield className="w-4 h-4 text-base-content/40 absolute left-3.5 pointer-events-none z-10" />
-                  <select
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                    className="select select-bordered w-full pl-10 rounded-2xl text-sm focus:select-primary transition-all bg-base-100 h-11 font-medium"
-                  >
-                    <option value="public">Grand Public / Étudiant / Électeur</option>
-                    <option value="jury">Membre du Jury Externe ou Interne</option>
-                    <option value="admin">Administrateur du Scrutin</option>
-                  </select>
-                </div>
-              </div>
-
               {/* Mot de passe */}
               <div className="form-control space-y-1.5">
                 <label className="text-xs font-semibold text-base-content/80">
-                  Mot de passe
+                  Mot de passe administrateur
                 </label>
                 <div className="relative flex items-center">
                   <Lock className="w-4 h-4 text-base-content/40 absolute left-3.5 pointer-events-none" />
                   <input
                     type={showPassword ? "text" : "password"}
                     required
-                    placeholder="••••••••••••"
+                    placeholder="Au moins 6 caractères"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="input input-bordered w-full pl-10 pr-10 rounded-2xl text-sm focus:input-primary transition-all bg-base-100 h-11"
@@ -255,7 +336,7 @@ export default function Register() {
                   <span className="loading loading-spinner loading-sm" />
                 ) : (
                   <>
-                    <span>Créer mon compte</span>
+                    <span>Créer l'espace organisateur</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -265,10 +346,10 @@ export default function Register() {
             {/* Lien Retour au Login */}
             <div className="text-center mt-6 pt-5 border-t border-base-300">
               <p className="text-xs text-base-content/70">
-                Déjà inscrit sur la plateforme ?{" "}
-                <a href="#" className="link link-primary link-hover font-semibold">
+                Déjà gestionnaire d'un espace ?{" "}
+                <Link to="/login" className="link link-primary link-hover font-semibold">
                   Se connecter
-                </a>
+                </Link>
               </p>
             </div>
 

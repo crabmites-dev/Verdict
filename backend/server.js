@@ -22,12 +22,30 @@ const app = express();
 // ==========================================
 
 // 1. Helmet : Configure les en-têtes HTTP pour sécuriser les requêtes
-app.use(helmet());
+app.use(helmet({
+    crossOriginOpenerPolicy: false // Permet les popups OAuth Google
+}));
 
-// 2. Configuration stricte de CORS
+// 2. Configuration CORS souple pour le développement (supporte localhost:5173 et localhost:3000)
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://127.0.0.1:5173',
+    process.env.FRONTEND_URL
+].filter(Boolean);
+
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    credentials: true
+    origin: (origin, callback) => {
+        // Autorise les requêtes sans origine (comme Postman ou curl) ou celles dans la liste
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(null, true); // En dev, on autorise pour éviter tout blocage réseau
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 app.use(express.json({ limit: '10kb' }));
@@ -39,7 +57,6 @@ app.use((req, res, next) => {
         const sanitize = (obj) => {
             for (const key in obj) {
                 if (typeof obj[key] === 'string') {
-                    // Nettoie les balises script basiques
                     obj[key] = obj[key].replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
                 } else if (typeof obj[key] === 'object' && obj[key] !== null) {
                     sanitize(obj[key]);
@@ -54,21 +71,24 @@ app.use((req, res, next) => {
 // 4. Rate Limiting global
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100,
+    max: 500, // Augmenté pour éviter de bloquer en dev
     message: { message: 'Too many requests from this IP, please try again after 15 minutes.' }
 });
 app.use('/api/', globalLimiter);
 
-// 5. Rate Limiting Spécifique
+// 5. Rate Limiting Spécifique (Assoupli pour les tests)
 const strictLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000,
-    max: 10,
-    message: { message: 'Too many attempts. Action locked for one hour to prevent fraud.' }
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: { message: 'Trop de tentatives consécutives. Veuillez patienter 15 minutes.' }
 });
 app.use('/api/auth/login', strictLimiter);
 app.use('/api/auth/register', strictLimiter);
 app.use('/api/public/vote', strictLimiter);
 
+// ==========================================
+//            DÉCLARATION DES ROUTES         //
+// ==========================================
 
 app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
@@ -91,5 +111,5 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`🚀 Server running on port ${PORT}`);
 });
