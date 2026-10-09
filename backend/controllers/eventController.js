@@ -116,6 +116,30 @@ export const closeEvents = async (req, res) => {
     }
 };
 
+export const launchEvents = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const launchQuery = `
+            UPDATE events 
+            SET status = 'active'
+            WHERE id = $1
+            RETURNING id, title, status, start_date, end_date
+        `;
+
+        const { rows, rowCount } = await pool.query(launchQuery, [id]); 
+
+        if (rowCount === 0) {
+            return res.status(404).json({ message: 'Événement introuvable' });
+        }
+
+        return res.status(200).json({ message: 'Scrutin ouvert avec succès ! Les votes sont désormais ouverts.', event: rows[0] });
+    } catch (error) {
+        console.error('Une erreur est survenue lors de l\'ouverture du scrutin: ', error);
+        return res.status(500).json({ message: 'Une erreur est survenue lors de l\'activation' });
+    }
+};
+
 /**
  * @desc    Générer ou importer des jetons de vote uniques pour une élection fermée (Admin only)
  * @route   POST /api/events/:id/voter-tokens

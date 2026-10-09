@@ -26,7 +26,11 @@ import {
   Activity,
   Send,
   Copy,
-  Check
+  Check,
+  UserPlus,
+  Tag,
+  ListPlus,
+  Play
 } from "lucide-react";
 import {
   AreaChart,
@@ -48,7 +52,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("overview"); // "overview" | "events" | "tokens" | "results" | "audit"
+  const [activeTab, setActiveTab] = useState("overview"); // "overview" | "events" | "tokens" | "candidates"
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [events, setEvents] = useState([]);
@@ -57,9 +61,19 @@ export default function AdminDashboard() {
   const [tokenStats, setTokenStats] = useState({ total: 0, used: 0, remaining: 0 });
   const [copiedToken, setCopiedToken] = useState(null);
 
+  // Données de gestion Événement (Catégories, Candidats, Critères)
+  const [categories, setCategories] = useState([]);
+  const [candidates, setCandidates] = useState([]);
+  const [criteriaList, setCriteriaList] = useState([]);
+  const [selectedCategoryForCriteria, setSelectedCategoryForCriteria] = useState(null);
+
   // Modales
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showTokenModal, setShowTokenModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showCandidateModal, setShowCandidateModal] = useState(false);
+  const [showCriteriaModal, setShowCriteriaModal] = useState(false);
+
   const [newTokenCount, setNewTokenCount] = useState(25);
   const [newEvent, setNewEvent] = useState({
     title: "",
@@ -69,11 +83,67 @@ export default function AdminDashboard() {
     auth_mode: "open_public" // "open_public" | "restricted_token"
   });
 
+  const [newCategory, setNewCategory] = useState({
+    name: "",
+    vote_mode: "mixed", // "public_only" | "jury_only" | "mixed"
+    jury_weight: 50
+  });
+
+  const [newCandidate, setNewCandidate] = useState({
+    category_id: "",
+    name: "",
+    photo_url: "",
+    bio_program: ""
+  });
+
+  const [newCriterion, setNewCriterion] = useState({
+    category_id: "",
+    label: "",
+    weight: 20,
+    min_scale: 0,
+    max_scale: 20
+  });
+
   const [notification, setNotification] = useState({ type: "", message: "" });
 
   const showToast = (type, message) => {
     setNotification({ type, message });
     setTimeout(() => setNotification({ type: "", message: "" }), 4000);
+  };
+
+  // Chargement des catégories et candidats liés à un événement
+  const fetchEventStructure = async (eventId) => {
+    if (!eventId) return;
+    try {
+      const [catsRes, candsRes] = await Promise.all([
+        axios.get(`http://localhost:5000/api/jury-panel/categories/event/${eventId}`, { withCredentials: true }),
+        axios.get(`http://localhost:5000/api/jury-panel/candidates/event/${eventId}`, { withCredentials: true })
+      ]);
+      const fetchedCats = catsRes.data?.categories || [];
+      setCategories(fetchedCats);
+      setCandidates(candsRes.data?.candidates || []);
+
+      if (fetchedCats.length > 0) {
+        setSelectedCategoryForCriteria(fetchedCats[0]);
+        fetchCriteria(fetchedCats[0].id);
+      } else {
+        setSelectedCategoryForCriteria(null);
+        setCriteriaList([]);
+      }
+    } catch (err) {
+      console.error("Erreur lors de la récupération des catégories et candidats:", err);
+    }
+  };
+
+  // Chargement des critères pour une catégorie
+  const fetchCriteria = async (categoryId) => {
+    if (!categoryId) return;
+    try {
+      const res = await axios.get(`http://localhost:5000/api/jury-panel/criteria/category/${categoryId}`, { withCredentials: true });
+      setCriteriaList(res.data?.criteria || []);
+    } catch (err) {
+      console.error("Erreur critères:", err);
+    }
   };
 
   // Chargement des données du tableau de bord
@@ -89,8 +159,9 @@ export default function AdminDashboard() {
       const evList = eventsRes.data?.events || [];
       setEvents(evList);
 
-      if (evList.length > 0 && !selectedEvent) {
-        setSelectedEvent(evList[0]);
+      if (evList.length > 0) {
+        const curEvent = selectedEvent ? evList.find(e => e.id === selectedEvent.id) || evList[0] : evList[0];
+        setSelectedEvent(curEvent);
       }
     } catch (err) {
       console.error("Dashboard fetch error:", err);
@@ -121,6 +192,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (selectedEvent) {
       fetchTokens(selectedEvent.id);
+      fetchEventStructure(selectedEvent.id);
     }
   }, [selectedEvent]);
 
@@ -141,6 +213,90 @@ export default function AdminDashboard() {
       fetchData();
     } catch (err) {
       showToast("error", err.response?.data?.message || "Erreur lors de la création.");
+    }
+  };
+
+  // Ouvrir / Lancer un scrutin (passer de draft à active)
+  const handleLaunchEvent = async (eventId) => {
+    try {
+      await axios.patch(`http://localhost:5000/api/events/${eventId}/launch`, {}, { withCredentials: true });
+      showToast("success", "Le scrutin est désormais OUVERT et accessible aux électeurs !");
+      fetchData();
+    } catch (err) {
+      showToast("error", err.response?.data?.message || "Erreur lors de l'activation.");
+    }
+  };
+
+  // Création d'une catégorie
+  const handleCreateCategory = async (e) => {
+    e.preventDefault();
+    if (!selectedEvent) return;
+    try {
+      await axios.post("http://localhost:5000/api/jury-panel/categories", {
+        eventId: selectedEvent.id,
+        name: newCategory.name,
+        vote_mode: newCategory.vote_mode,
+        jury_weight: newCategory.jury_weight
+      }, { withCredentials: true });
+      showToast("success", `Catégorie "${newCategory.name}" créée avec succès !`);
+      setShowCategoryModal(false);
+      setNewCategory({ name: "", vote_mode: "mixed", jury_weight: 50 });
+      fetchEventStructure(selectedEvent.id);
+    } catch (err) {
+      showToast("error", err.response?.data?.message || "Erreur lors de la création de la catégorie.");
+    }
+  };
+
+  // Création d'un candidat
+  const handleCreateCandidate = async (e) => {
+    e.preventDefault();
+    if (!newCandidate.category_id) {
+      showToast("error", "Veuillez sélectionner une catégorie.");
+      return;
+    }
+    try {
+      await axios.post("http://localhost:5000/api/jury-panel/candidates", {
+        category_id: newCandidate.category_id,
+        name: newCandidate.name,
+        photo_url: newCandidate.photo_url || null,
+        bio_program: newCandidate.bio_program || null
+      }, { withCredentials: true });
+      showToast("success", `Candidat "${newCandidate.name}" inscrit avec succès !`);
+      setShowCandidateModal(false);
+      setNewCandidate({ category_id: "", name: "", photo_url: "", bio_program: "" });
+      fetchEventStructure(selectedEvent.id);
+    } catch (err) {
+      showToast("error", err.response?.data?.message || "Erreur lors de l'inscription du candidat.");
+    }
+  };
+
+  // Création d'un critère de notation
+  const handleCreateCriterion = async (e) => {
+    e.preventDefault();
+    if (!selectedCategoryForCriteria) {
+      showToast("error", "Aucune catégorie sélectionnée.");
+      return;
+    }
+    try {
+      await axios.post("http://localhost:5000/api/jury-panel/criteria", {
+        category_id: selectedCategoryForCriteria.id,
+        label: newCriterion.label,
+        weight: newCriterion.weight,
+        min_scale: newCriterion.min_scale,
+        max_scale: newCriterion.max_scale
+      }, { withCredentials: true });
+      showToast("success", `Critère "${newCriterion.label}" ajouté !`);
+      setShowCriteriaModal(false);
+      setNewCriterion({
+        category_id: "",
+        label: "",
+        weight: 20,
+        min_scale: 0,
+        max_scale: 20
+      });
+      fetchCriteria(selectedCategoryForCriteria.id);
+    } catch (err) {
+      showToast("error", err.response?.data?.message || "Erreur lors de l'ajout du critère.");
     }
   };
 
@@ -259,6 +415,14 @@ export default function AdminDashboard() {
               }`}
             >
               Jetons d'Émargement
+            </button>
+            <button
+              onClick={() => setActiveTab("candidates")}
+              className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
+                activeTab === "candidates" ? "bg-base-100 text-primary shadow-xs" : "text-base-content/60 hover:text-base-content"
+              }`}
+            >
+              Candidats & Critères ({candidates.length})
             </button>
           </nav>
         </div>
@@ -604,6 +768,15 @@ export default function AdminDashboard() {
                         {new Date(ev.start_date).toLocaleDateString()} → {new Date(ev.end_date).toLocaleDateString()}
                       </td>
                       <td className="text-right space-x-2">
+                        {ev.status === "draft" && (
+                          <button
+                            onClick={() => handleLaunchEvent(ev.id)}
+                            className="btn btn-success btn-xs rounded-lg text-white normal-case gap-1"
+                          >
+                            <Play className="w-3 h-3" />
+                            Ouvrir le Vote
+                          </button>
+                        )}
                         {ev.status === "active" && (
                           <button
                             onClick={() => handleCloseEvent(ev.id)}
@@ -615,11 +788,20 @@ export default function AdminDashboard() {
                         <button
                           onClick={() => {
                             setSelectedEvent(ev);
-                            setActiveTab("tokens");
+                            setActiveTab("candidates");
                           }}
                           className="btn btn-ghost btn-xs rounded-lg text-primary normal-case"
                         >
-                          Gérer Jetons →
+                          Candidats ({candidates.filter(c => c.category_id && categories.some(cat => cat.id === c.category_id && cat.event_id === ev.id)).length || "Config"}) →
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedEvent(ev);
+                            setActiveTab("tokens");
+                          }}
+                          className="btn btn-ghost btn-xs rounded-lg text-base-content/60 normal-case"
+                        >
+                          Jetons →
                         </button>
                       </td>
                     </tr>
@@ -735,6 +917,187 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* 4. GESTION DES CANDIDATS, CATÉGORIES & CRITÈRES */}
+        {activeTab === "candidates" && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            {/* Barre d'action supérieure */}
+            <div className="bg-base-100 rounded-3xl border border-base-300 shadow-xs p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-1.5">
+                  <Tag className="w-3.5 h-3.5" />
+                  <span>Structure de Délibération</span>
+                </div>
+                <h2 className="text-xl font-bold font-display">
+                  Candidats & Critères de Notation — {selectedEvent?.title || "Scrutin"}
+                </h2>
+                <p className="text-xs text-base-content/60">
+                  Configurez les catégories électorales, associez les candidats et définissez les barèmes du jury.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                <button
+                  onClick={() => setShowCategoryModal(true)}
+                  className="btn btn-outline btn-primary btn-sm rounded-xl font-semibold gap-1.5 normal-case"
+                >
+                  <Tag className="w-4 h-4" />
+                  + Catégorie
+                </button>
+                <button
+                  onClick={() => {
+                    if (categories.length === 0) {
+                      showToast("error", "Créez d'abord au moins une catégorie.");
+                      return;
+                    }
+                    setShowCandidateModal(true);
+                  }}
+                  className="btn btn-primary btn-sm rounded-xl font-semibold gap-1.5 normal-case"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  + Candidat
+                </button>
+              </div>
+            </div>
+
+            {/* Grille : Catégories & Candidats */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Colonne 1 & 2 : Liste des Candidats par Catégorie */}
+              <div className="lg:col-span-2 space-y-4">
+                <div className="bg-base-100 rounded-3xl border border-base-300 shadow-xs p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-base font-bold font-display flex items-center gap-2">
+                      <Users className="w-4 h-4 text-primary" />
+                      Candidats Enregistrés ({candidates.length})
+                    </h3>
+                    <span className="text-xs text-base-content/50">
+                      {categories.length} catégorie(s) configurée(s)
+                    </span>
+                  </div>
+
+                  {candidates.length === 0 ? (
+                    <div className="text-center py-12 border-2 border-dashed border-base-200 rounded-2xl p-6">
+                      <Users className="w-10 h-10 text-base-content/30 mx-auto mb-3" />
+                      <p className="text-sm font-semibold text-base-content/70">Aucun candidat pour ce scrutin</p>
+                      <p className="text-xs text-base-content/50 mt-1 max-w-sm mx-auto">
+                        Créez une catégorie (ex: Prix de l'Innovation, Meilleur Projet) puis ajoutez-y vos candidats.
+                      </p>
+                      <button
+                        onClick={() => {
+                          if (categories.length === 0) setShowCategoryModal(true);
+                          else setShowCandidateModal(true);
+                        }}
+                        className="btn btn-primary btn-sm rounded-xl mt-4 font-semibold normal-case"
+                      >
+                        {categories.length === 0 ? "Créer une première catégorie" : "Ajouter un candidat"}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {candidates.map((cand) => (
+                        <div
+                          key={cand.candidate_id}
+                          className="p-4 rounded-2xl bg-base-200/50 border border-base-300 flex items-start gap-3.5 hover:border-primary/50 transition-colors"
+                        >
+                          <img
+                            src={cand.photo_url || `https://api.dicebear.com/7.x/shapes/svg?seed=${cand.candidate_name}`}
+                            alt={cand.candidate_name}
+                            className="w-12 h-12 rounded-xl object-cover border border-base-300 shrink-0 bg-base-100"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <span className="badge badge-xs badge-primary font-semibold mb-1">
+                              {cand.category_name}
+                            </span>
+                            <h4 className="text-sm font-bold truncate text-base-content">
+                              {cand.candidate_name}
+                            </h4>
+                            <p className="text-xs text-base-content/60 line-clamp-2 mt-0.5">
+                              {cand.bio_program || "Aucune description de programme"}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Colonne 3 : Barème et Critères Jury */}
+              <div className="space-y-4">
+                <div className="bg-base-100 rounded-3xl border border-base-300 shadow-xs p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-base font-bold font-display flex items-center gap-2">
+                        <Sliders className="w-4 h-4 text-primary" />
+                        Grille du Jury
+                      </h3>
+                      <p className="text-xs text-base-content/50">Critères & barèmes de notation</p>
+                    </div>
+                    {selectedCategoryForCriteria && (
+                      <button
+                        onClick={() => setShowCriteriaModal(true)}
+                        className="btn btn-ghost btn-xs text-primary font-bold normal-case gap-1"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Critère
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Sélecteur de catégorie active pour les critères */}
+                  {categories.length > 0 && (
+                    <div className="form-control">
+                      <label className="text-[11px] font-bold text-base-content/50 uppercase tracking-wider mb-1">
+                        Catégorie Ciblée
+                      </label>
+                      <select
+                        value={selectedCategoryForCriteria?.id || ""}
+                        onChange={(e) => {
+                          const cat = categories.find(c => c.id === parseInt(e.target.value, 10));
+                          setSelectedCategoryForCriteria(cat);
+                          if (cat) fetchCriteria(cat.id);
+                        }}
+                        className="select select-bordered select-sm rounded-xl font-medium"
+                      >
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name} ({c.vote_mode === "mixed" ? `Mixte jury ${c.jury_weight}%` : c.vote_mode})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Liste des critères */}
+                  <div className="space-y-2 pt-2">
+                    {criteriaList.map((crit) => (
+                      <div
+                        key={crit.id}
+                        className="p-3 rounded-xl bg-base-200/60 border border-base-300 flex items-center justify-between text-xs"
+                      >
+                        <div>
+                          <div className="font-bold text-base-content">{crit.label}</div>
+                          <div className="text-[10px] text-base-content/50">
+                            Barème : {crit.min_scale} à {crit.max_scale} pts
+                          </div>
+                        </div>
+                        <span className="badge badge-sm badge-neutral font-mono font-bold">
+                          Poids {crit.weight}%
+                        </span>
+                      </div>
+                    ))}
+
+                    {criteriaList.length === 0 && (
+                      <div className="text-center py-6 text-base-content/50 text-xs">
+                        {categories.length === 0 ? "Aucune catégorie disponible." : "Aucun critère défini pour cette catégorie."}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
       </main>
 
       {/* ======================================================== */}
@@ -826,8 +1189,246 @@ export default function AdminDashboard() {
       )}
 
       {/* ======================================================== */}
-      {/* MODAL : GÉNÉRATION DE JETONS                             */}
+      {/* MODAL : NOUVELLE CATÉGORIE                              */}
       {/* ======================================================== */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+          <div className="bg-base-100 rounded-3xl p-6 sm:p-8 max-w-md w-full border border-base-300 shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold font-display mb-1">Ajouter une Catégorie</h3>
+            <p className="text-xs text-base-content/60 mb-5">
+              Pour le scrutin : <strong>{selectedEvent?.title}</strong>
+            </p>
+
+            <form onSubmit={handleCreateCategory} className="space-y-4 text-xs">
+              <div>
+                <label className="font-semibold block mb-1">Nom de la catégorie</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Meilleur Projet Numérique, Prix du Public"
+                  value={newCategory.name}
+                  onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                  className="input input-bordered w-full rounded-xl text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold block mb-1">Mode de Délibération</label>
+                <select
+                  value={newCategory.vote_mode}
+                  onChange={(e) => setNewCategory({ ...newCategory, vote_mode: e.target.value })}
+                  className="select select-bordered w-full rounded-xl font-medium"
+                >
+                  <option value="mixed">Mixte (Vote Public + Barème Jury)</option>
+                  <option value="public_only">100% Suffrage Public</option>
+                  <option value="jury_only">100% Jury Professionnel</option>
+                </select>
+              </div>
+
+              {newCategory.vote_mode === "mixed" && (
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="font-semibold">Poids du Jury</label>
+                    <span className="font-mono font-bold text-primary">{newCategory.jury_weight}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="10"
+                    max="90"
+                    step="5"
+                    value={newCategory.jury_weight}
+                    onChange={(e) => setNewCategory({ ...newCategory, jury_weight: parseInt(e.target.value, 10) })}
+                    className="range range-primary range-sm"
+                  />
+                  <div className="text-[10px] text-base-content/50 mt-1 flex justify-between">
+                    <span>Public: {100 - newCategory.jury_weight}%</span>
+                    <span>Jury: {newCategory.jury_weight}%</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-base-200">
+                <button
+                  type="button"
+                  onClick={() => setShowCategoryModal(false)}
+                  className="btn btn-ghost btn-sm rounded-xl normal-case"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-sm rounded-xl font-semibold normal-case px-5"
+                >
+                  Créer la Catégorie
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL : NOUVEAU CANDIDAT                                */}
+      {/* ======================================================== */}
+      {showCandidateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+          <div className="bg-base-100 rounded-3xl p-6 sm:p-8 max-w-md w-full border border-base-300 shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold font-display mb-1">Inscrire un Candidat</h3>
+            <p className="text-xs text-base-content/60 mb-5">
+              Associez le candidat à sa catégorie de compétition.
+            </p>
+
+            <form onSubmit={handleCreateCandidate} className="space-y-4 text-xs">
+              <div>
+                <label className="font-semibold block mb-1">Catégorie</label>
+                <select
+                  required
+                  value={newCandidate.category_id}
+                  onChange={(e) => setNewCandidate({ ...newCandidate, category_id: e.target.value })}
+                  className="select select-bordered w-full rounded-xl font-medium"
+                >
+                  <option value="">Sélectionnez une catégorie...</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="font-semibold block mb-1">Nom du candidat / Titre du projet</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Sophie Martin / Projet SolarGreen"
+                  value={newCandidate.name}
+                  onChange={(e) => setNewCandidate({ ...newCandidate, name: e.target.value })}
+                  className="input input-bordered w-full rounded-xl text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold block mb-1">URL de la photo ou du logo (optionnel)</label>
+                <input
+                  type="url"
+                  placeholder="https://..."
+                  value={newCandidate.photo_url}
+                  onChange={(e) => setNewCandidate({ ...newCandidate, photo_url: e.target.value })}
+                  className="input input-bordered w-full rounded-xl text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold block mb-1">Description / Programme</label>
+                <textarea
+                  rows={2}
+                  placeholder="Points clés du programme ou de la candidature..."
+                  value={newCandidate.bio_program}
+                  onChange={(e) => setNewCandidate({ ...newCandidate, bio_program: e.target.value })}
+                  className="textarea textarea-bordered w-full rounded-xl text-sm"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-base-200">
+                <button
+                  type="button"
+                  onClick={() => setShowCandidateModal(false)}
+                  className="btn btn-ghost btn-sm rounded-xl normal-case"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-sm rounded-xl font-semibold normal-case px-5"
+                >
+                  Inscrire le Candidat
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL : NOUVEAU CRITÈRE DU JURY                         */}
+      {/* ======================================================== */}
+      {showCriteriaModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+          <div className="bg-base-100 rounded-3xl p-6 sm:p-8 max-w-md w-full border border-base-300 shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold font-display mb-1">Ajouter un Critère de Notation</h3>
+            <p className="text-xs text-base-content/60 mb-5">
+              Pour la catégorie : <strong>{selectedCategoryForCriteria?.name}</strong>
+            </p>
+
+            <form onSubmit={handleCreateCriterion} className="space-y-4 text-xs">
+              <div>
+                <label className="font-semibold block mb-1">Intitulé du critère</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Clarté de la présentation, Faisabilité technique"
+                  value={newCriterion.label}
+                  onChange={(e) => setNewCriterion({ ...newCriterion, label: e.target.value })}
+                  className="input input-bordered w-full rounded-xl text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold block mb-1">Poids relatif (en %)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  required
+                  value={newCriterion.weight}
+                  onChange={(e) => setNewCriterion({ ...newCriterion, weight: parseInt(e.target.value, 10) || 10 })}
+                  className="input input-bordered w-full rounded-xl text-sm"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold block mb-1">Note Min</label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={newCriterion.min_scale}
+                    onChange={(e) => setNewCriterion({ ...newCriterion, min_scale: parseInt(e.target.value, 10) || 0 })}
+                    className="input input-bordered w-full rounded-xl text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold block mb-1">Note Max</label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    value={newCriterion.max_scale}
+                    onChange={(e) => setNewCriterion({ ...newCriterion, max_scale: parseInt(e.target.value, 10) || 20 })}
+                    className="input input-bordered w-full rounded-xl text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-base-200">
+                <button
+                  type="button"
+                  onClick={() => setShowCriteriaModal(false)}
+                  className="btn btn-ghost btn-sm rounded-xl normal-case"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-sm rounded-xl font-semibold normal-case px-5"
+                >
+                  Ajouter le Critère
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       {showTokenModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
           <div className="bg-base-100 rounded-3xl p-6 sm:p-8 max-w-md w-full border border-base-300 shadow-2xl animate-in zoom-in-95 duration-200">
