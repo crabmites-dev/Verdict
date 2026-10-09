@@ -4,6 +4,7 @@ import {
     getAllEvents, 
     updateEvents, 
     closeEvents,
+    launchEvents,
     generateVoterTokens,
     getVoterTokens
 } from "../controllers/eventController.js";
@@ -18,6 +19,9 @@ router.route('/')
 
 router.route('/:id')
     .put(protect, authorize('admin'), updateEvents);
+
+router.route('/:id/launch')
+    .patch(protect, authorize('admin'), launchEvents);
 
 router.route('/:id/close')
     .patch(protect, authorize('admin'), closeEvents);

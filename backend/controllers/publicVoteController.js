@@ -66,6 +66,61 @@ export const getActivePublicPolls = async (req, res) => {
 };
 
 /**
+ * @desc    Récupérer les détails complets d'un scrutin (catégories et candidats) pour l'espace de vote
+ * @route   GET /api/public/poll-details/:eventId
+ */
+export const getPollDetails = async (req, res) => {
+    const { eventId } = req.params;
+
+    try {
+        const eventRes = await pool.query(`
+            SELECT id, title, description, start_date, end_date, status, auth_mode 
+            FROM events 
+            WHERE id = $1
+        `, [eventId]);
+
+        if (eventRes.rows.length === 0) {
+            return res.status(404).json({ message: 'Scrutin introuvable.' });
+        }
+
+        const event = eventRes.rows[0];
+
+        // Récupérer les catégories qui autorisent le vote public ('public_only' ou 'mixed')
+        const categoriesRes = await pool.query(`
+            SELECT id, name, vote_mode, jury_weight 
+            FROM categories 
+            WHERE event_id = $1 AND vote_mode IN ('public_only', 'mixed')
+            ORDER BY name ASC
+        `, [eventId]);
+
+        const categoriesWithCandidates = [];
+
+        for (const cat of categoriesRes.rows) {
+            const candidatesRes = await pool.query(`
+                SELECT id, name, photo_url, bio_program 
+                FROM candidates 
+                WHERE category_id = $1 
+                ORDER BY name ASC
+            `, [cat.id]);
+
+            categoriesWithCandidates.push({
+                ...cat,
+                candidates: candidatesRes.rows
+            });
+        }
+
+        return res.status(200).json({
+            event,
+            categories: categoriesWithCandidates
+        });
+
+    } catch (error) {
+        console.error('getPollDetails error:', error);
+        return res.status(500).json({ message: 'Erreur lors du chargement des détails du scrutin.' });
+    }
+};
+
+/**
  * @desc    Vérifier la validité d'un jeton ou d'un lien d'émargement avant de voter
  * @route   POST /api/public/verify-token
  */
