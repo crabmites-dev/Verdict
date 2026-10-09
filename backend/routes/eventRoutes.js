@@ -1,24 +1,30 @@
-import express from 'express'
-import { createEvent, getAllEvents, updateEvents, closeEvents } from "../controllers/eventController.js";
+import express from 'express';
+import { 
+    createEvent, 
+    getAllEvents, 
+    updateEvents, 
+    closeEvents,
+    generateVoterTokens,
+    getVoterTokens
+} from "../controllers/eventController.js";
 import { protect, authorize } from '../middlewares/authMiddleware.js';
 
-const router = express.Router()
-/*
-router.post('/create-event', protect, authorize('admin'), createEvent)
-router.put('/:id/update-event', protect, authorize('admin'), updateEvents)
-router.post('/:id/close-event', protect, authorize('admin'), closeEvents)
+const router = express.Router();
 
-router.get('/get-all-events', protect, getAllEvents)
- */
-
-router.route ('/')
-.get(protect, getAllEvents)
-.post(protect, authorize('admin'), createEvent)
+// Routes événements
+router.route('/')
+    .get(protect, getAllEvents)
+    .post(protect, authorize('admin'), createEvent);
 
 router.route('/:id')
-.put(protect, authorize('admin'), updateEvents)
+    .put(protect, authorize('admin'), updateEvents);
 
-router.route('/:close')
-.patch(protect, authorize('admin'), closeEvents)
+router.route('/:id/close')
+    .patch(protect, authorize('admin'), closeEvents);
+
+// Routes d'administration des jetons de scrutin hybride (Universitaire / Entreprise)
+router.route('/:id/voter-tokens')
+    .post(protect, authorize('admin'), generateVoterTokens)
+    .get(protect, authorize('admin'), getVoterTokens);
 
 export default router;
