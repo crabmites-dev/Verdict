@@ -1,4 +1,130 @@
 import pool from "../config/db.js";
+import bcrypt from "bcrypt";
+import crypto from "crypto";
+
+/**
+ * @desc    Inviter ou accréditer un juré pour un événement spécifique (Admin only)
+ * @route   POST /api/jury-panel/events/:eventId/invite-juror
+ */
+export const inviteJurorToEvent = async (req, res) => {
+    const { eventId } = req.params;
+    const email = req.body.email?.trim().toLowerCase();
+    const name = req.body.name?.trim() || "Membre du Jury";
+    const providedPassword = req.body.password?.trim();
+
+    if (!eventId || !email) {
+        return res.status(400).json({ message: "L'ID de l'événement et l'adresse email sont requis." });
+    }
+
+    try {
+        // 1. Vérifier si l'événement existe
+        const eventCheck = await pool.query('SELECT id, title FROM events WHERE id = $1', [eventId]);
+        if (eventCheck.rows.length === 0) {
+            return res.status(404).json({ message: "Événement introuvable." });
+        }
+
+        // 2. Vérifier si l'utilisateur existe déjà
+        const userCheck = await pool.query('SELECT id, name, email, role FROM users WHERE email = $1', [email]);
+        let jurorId;
+        let generatedPassword = null;
+
+        if (userCheck.rows.length > 0) {
+            jurorId = userCheck.rows[0].id;
+            // S'assurer que le rôle est au minimum 'jury' (sauf s'il est déjà admin)
+            if (userCheck.rows[0].role !== 'admin') {
+                await pool.query("UPDATE users SET role = 'jury' WHERE id = $1", [jurorId]);
+            }
+        } else {
+            // Créer le compte avec mot de passe fourni ou généré
+            generatedPassword = providedPassword || crypto.randomBytes(4).toString('hex') + 'V!';
+            const hash = await bcrypt.hash(generatedPassword, 10);
+
+            const newUser = await pool.query(
+                "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, 'jury') RETURNING id, name, email, role",
+                [name, email, hash]
+            );
+            jurorId = newUser.rows[0].id;
+        }
+
+        // 3. Associer le juré à l'événement dans event_jurors
+        const assignQuery = `
+            INSERT INTO event_jurors (event_id, user_id)
+            VALUES ($1, $2)
+            ON CONFLICT (event_id, user_id) DO NOTHING
+            RETURNING id, event_id, user_id, invited_at
+        `;
+        const { rows, rowCount } = await pool.query(assignQuery, [eventId, jurorId]);
+
+        if (rowCount === 0) {
+            return res.status(400).json({ message: "Ce juré est déjà accrédité pour ce scrutin." });
+        }
+
+        return res.status(201).json({
+            message: `Juré accrédité avec succès pour "${eventCheck.rows[0].title}".`,
+            juror: {
+                id: jurorId,
+                name: name,
+                email: email,
+                initialPassword: generatedPassword // Renvoyé pour que l'admin puisse lui transmettre si nouveau compte
+            }
+        });
+
+    } catch (error) {
+        console.error("Invite juror error:", error);
+        return res.status(500).json({ message: "Erreur serveur lors de l'accréditation du juré." });
+    }
+};
+
+/**
+ * @desc    Lister les jurés accrédités pour un événement (Admin only)
+ * @route   GET /api/jury-panel/events/:eventId/jurors
+ */
+export const getEventJurors = async (req, res) => {
+    const { eventId } = req.params;
+
+    try {
+        const queryText = `
+            SELECT u.id, u.name, u.email, u.role, ej.invited_at,
+                   (SELECT COUNT(DISTINCT r.candidate_id) 
+                    FROM jury_ratings r 
+                    INNER JOIN criteria cr ON r.criteria_id = cr.id
+                    INNER JOIN categories cat ON cr.category_id = cat.id
+                    WHERE r.juror_id = u.id AND cat.event_id = $1) AS evaluated_candidates_count
+            FROM event_jurors ej
+            INNER JOIN users u ON ej.user_id = u.id
+            WHERE ej.event_id = $1
+            ORDER BY ej.invited_at DESC
+        `;
+        const { rows } = await pool.query(queryText, [eventId]);
+
+        return res.status(200).json({ jurors: rows });
+    } catch (error) {
+        console.error("Get event jurors error:", error);
+        return res.status(500).json({ message: "Erreur lors de la récupération des jurés." });
+    }
+};
+
+/**
+ * @desc    Révoquer l'accréditation d'un juré sur un événement (Admin only)
+ * @route   DELETE /api/jury-panel/events/:eventId/jurors/:userId
+ */
+export const removeJurorFromEvent = async (req, res) => {
+    const { eventId, userId } = req.params;
+
+    try {
+        const deleteQuery = 'DELETE FROM event_jurors WHERE event_id = $1 AND user_id = $2 RETURNING id';
+        const { rowCount } = await pool.query(deleteQuery, [eventId, userId]);
+
+        if (rowCount === 0) {
+            return res.status(404).json({ message: "Ce juré ne fait pas partie de ce scrutin." });
+        }
+
+        return res.status(200).json({ message: "Accréditation du juré révoquée avec succès." });
+    } catch (error) {
+        console.error("Remove juror error:", error);
+        return res.status(500).json({ message: "Erreur serveur lors de la révocation du juré." });
+    }
+};
 
 export const createCategorie = async (req, res) => {
     const { eventId, vote_mode, jury_weight } = req.body;
@@ -100,6 +226,7 @@ export const getCandidateByEvent = async (req, res) => {
 export const getJuryEvaluationBoard = async (req, res) => {
     const { eventId } = req.params;
     const jurorId = req.user.id;
+    const userRole = req.user.role;
 
     try {
         const eventQuery = `
@@ -111,6 +238,20 @@ export const getJuryEvaluationBoard = async (req, res) => {
 
         if (eventRes.rows.length === 0) {
             return res.status(404).json({ message: 'Événement introuvable.' });
+        }
+
+        // CONTRÔLE D'ACCÈS DU JURÉ :
+        // L'admin peut tout prévisualiser ; un juré doit obligatoirement avoir été accrédité par l'admin dans event_jurors
+        if (userRole !== 'admin') {
+            const accreditCheck = await pool.query(
+                'SELECT id FROM event_jurors WHERE event_id = $1 AND user_id = $2',
+                [eventId, jurorId]
+            );
+            if (accreditCheck.rows.length === 0) {
+                return res.status(403).json({ 
+                    message: "Accès refusé. Vous n'avez pas été mandaté par l'administrateur comme membre du jury pour ce scrutin." 
+                });
+            }
         }
 
         // Catégories concernées par le vote du jury ('jury_only' ou 'mixed')
@@ -172,6 +313,7 @@ export const getJuryEvaluationBoard = async (req, res) => {
 export const submitBulkRatings = async (req, res) => {
     const { candidate_id, ratings } = req.body; // ratings: [{ criteria_id, rating_value }]
     const jurorId = req.user.id;
+    const userRole = req.user.role;
 
     if (!candidate_id || !Array.isArray(ratings) || ratings.length === 0) {
         return res.status(400).json({ message: 'Le candidat et la liste des notes sont obligatoires.' });
@@ -181,6 +323,35 @@ export const submitBulkRatings = async (req, res) => {
 
     try {
         await client.query('BEGIN');
+
+        // Vérifier à quel événement appartient ce candidat
+        const candEventCheck = await client.query(`
+            SELECT cat.event_id 
+            FROM candidates c
+            INNER JOIN categories cat ON c.category_id = cat.id
+            WHERE c.id = $1
+        `, [candidate_id]);
+
+        if (candEventCheck.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ message: 'Candidat introuvable.' });
+        }
+
+        const eventId = candEventCheck.rows[0].event_id;
+
+        // VÉRIFICATION D'ACCRÉDITATION OBLIGATOIRE DU JURÉ
+        if (userRole !== 'admin') {
+            const accredit = await client.query(
+                'SELECT id FROM event_jurors WHERE event_id = $1 AND user_id = $2',
+                [eventId, jurorId]
+            );
+            if (accredit.rows.length === 0) {
+                await client.query('ROLLBACK');
+                return res.status(403).json({ 
+                    message: "Interdit : vous n'êtes pas accrédité comme juré sur ce scrutin." 
+                });
+            }
+        }
 
         const savedRatings = [];
 

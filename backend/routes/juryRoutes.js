@@ -5,12 +5,20 @@ import {
     createCandidate, 
     getCandidateByEvent,
     getJuryEvaluationBoard,
-    submitBulkRatings
+    submitBulkRatings,
+    inviteJurorToEvent,
+    getEventJurors,
+    removeJurorFromEvent
 } from '../controllers/juryController.js';
 import { protect, authorize } from '../middlewares/authMiddleware.js';
 import { createCriterion, getCriteriaByCategorie, submitJuryRating } from '../controllers/ratingController.js';
 
 const router = express.Router();
+
+// Gestion des Jurés Accrédités par Scrutin (Admin only)
+router.post('/events/:eventId/invite-juror', protect, authorize('admin'), inviteJurorToEvent);
+router.get('/events/:eventId/jurors', protect, authorize('admin'), getEventJurors);
+router.delete('/events/:eventId/jurors/:userId', protect, authorize('admin'), removeJurorFromEvent);
 
 // Configuration par l'Admin
 router.post('/categories', protect, authorize('admin'), createCategorie);

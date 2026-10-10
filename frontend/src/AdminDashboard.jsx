@@ -30,7 +30,13 @@ import {
   UserPlus,
   Tag,
   ListPlus,
-  Play
+  Play,
+  Gavel,
+  Mail,
+  Trash2,
+  LayoutDashboard,
+  Menu,
+  X
 } from "lucide-react";
 import {
   AreaChart,
@@ -52,7 +58,14 @@ import { useNavigate } from "react-router-dom";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("overview"); // "overview" | "events" | "tokens" | "candidates"
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("verdict_user")) || null;
+    } catch (e) {
+      return null;
+    }
+  });
+  const [activeTab, setActiveTab] = useState("overview"); // "overview" | "events" | "tokens" | "candidates" | "jurors"
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [events, setEvents] = useState([]);
@@ -61,10 +74,11 @@ export default function AdminDashboard() {
   const [tokenStats, setTokenStats] = useState({ total: 0, used: 0, remaining: 0 });
   const [copiedToken, setCopiedToken] = useState(null);
 
-  // Données de gestion Événement (Catégories, Candidats, Critères)
+  // Données de gestion Événement (Catégories, Candidats, Critères, Jurés)
   const [categories, setCategories] = useState([]);
   const [candidates, setCandidates] = useState([]);
   const [criteriaList, setCriteriaList] = useState([]);
+  const [jurors, setJurors] = useState([]);
   const [selectedCategoryForCriteria, setSelectedCategoryForCriteria] = useState(null);
 
   // Modales
@@ -73,6 +87,14 @@ export default function AdminDashboard() {
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showCandidateModal, setShowCandidateModal] = useState(false);
   const [showCriteriaModal, setShowCriteriaModal] = useState(false);
+  const [showJurorModal, setShowJurorModal] = useState(false);
+  const [lastInvitedJurorCredentials, setLastInvitedJurorCredentials] = useState(null);
+
+  const [newJuror, setNewJuror] = useState({
+    name: "",
+    email: "",
+    password: ""
+  });
 
   const [newTokenCount, setNewTokenCount] = useState(25);
   const [newEvent, setNewEvent] = useState({
@@ -185,6 +207,17 @@ export default function AdminDashboard() {
     }
   };
 
+  // Chargement des jurés accrédités pour l'événement sélectionné
+  const fetchJurors = async (eventId) => {
+    if (!eventId) return;
+    try {
+      const res = await axios.get(`http://localhost:5000/api/jury-panel/events/${eventId}/jurors`, { withCredentials: true });
+      setJurors(res.data?.jurors || []);
+    } catch (err) {
+      console.error("Erreur jurés:", err);
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -193,8 +226,49 @@ export default function AdminDashboard() {
     if (selectedEvent) {
       fetchTokens(selectedEvent.id);
       fetchEventStructure(selectedEvent.id);
+      fetchJurors(selectedEvent.id);
     }
   }, [selectedEvent]);
+
+  // Inviter un juré
+  const handleInviteJuror = async (e) => {
+    e.preventDefault();
+    if (!selectedEvent) return;
+    try {
+      const res = await axios.post(
+        `http://localhost:5000/api/jury-panel/events/${selectedEvent.id}/invite-juror`,
+        newJuror,
+        { withCredentials: true }
+      );
+      showToast("success", res.data?.message || "Juré accrédité avec succès !");
+      if (res.data?.juror?.initialPassword) {
+        setLastInvitedJurorCredentials({
+          email: res.data.juror.email,
+          password: res.data.juror.initialPassword
+        });
+      }
+      setNewJuror({ name: "", email: "", password: "" });
+      fetchJurors(selectedEvent.id);
+    } catch (err) {
+      showToast("error", err.response?.data?.message || "Erreur lors de l'accréditation du juré.");
+    }
+  };
+
+  // Révoquer un juré
+  const handleRemoveJuror = async (jurorId) => {
+    if (!selectedEvent) return;
+    if (!window.confirm("Êtes-vous sûr de vouloir révoquer l'accréditation de ce juré pour ce scrutin ?")) return;
+    try {
+      await axios.delete(
+        `http://localhost:5000/api/jury-panel/events/${selectedEvent.id}/jurors/${jurorId}`,
+        { withCredentials: true }
+      );
+      showToast("success", "Accréditation du juré révoquée.");
+      fetchJurors(selectedEvent.id);
+    } catch (err) {
+      showToast("error", err.response?.data?.message || "Erreur lors de la révocation.");
+    }
+  };
 
   // Création d'événement
   const handleCreateEvent = async (e) => {
@@ -357,8 +431,36 @@ export default function AdminDashboard() {
     { name: "Émargement Restreint", value: events.filter(e => e.auth_mode === "restricted_token").length || 2, color: "#10b981" }
   ];
 
+  // State pour le tiroir mobile responsive
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Date du jour formatée en français
+  const formattedDate = new Date().toLocaleDateString("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long"
+  });
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Bonjour";
+    if (hour < 18) return "Bon après-midi";
+    return "Bonsoir";
+  };
+
+  const navItems = [
+    { id: "overview", label: "Vue d'ensemble", icon: LayoutDashboard },
+    { id: "events", label: "Scrutins & Événements", icon: Layers, badge: events.length },
+    { id: "tokens", label: "Jetons d'Émargement", icon: Key, badge: tokenStats.total ? `${tokenStats.used}/${tokenStats.total}` : null },
+    { id: "candidates", label: "Candidats & Critères", icon: Tag, badge: candidates.length },
+    { id: "jurors", label: "Collège des Jurés", icon: Gavel, badge: jurors.length },
+  ];
+
+  const adminDisplayName = currentUser?.name || "Administrateur";
+  const adminInitial = adminDisplayName.charAt(0).toUpperCase();
+
   return (
-    <div className="min-h-screen bg-base-200 text-base-content flex flex-col font-sans selection:bg-primary selection:text-primary-content">
+    <div className="min-h-screen bg-[#f8fafc] text-base-content flex font-sans selection:bg-primary selection:text-primary-content relative">
       
       {/* Toast Notification */}
       {notification.message && (
@@ -370,136 +472,206 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* OVERLAY SOMBRE SUR MOBILE QUAND LE MENU EST OUVERT */}
+      {mobileMenuOpen && (
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-40 lg:hidden animate-in fade-in duration-200"
+        />
+      )}
+
       {/* ======================================================== */}
-      {/* NAVIGATION SUPÉRIEURE (HEADER SAAS)                      */}
+      {/* SIDEBAR : FIXE SUR DESKTOP (LG+), DRAWER SUR MOBILE      */}
       {/* ======================================================== */}
-      <header className="sticky top-0 z-40 bg-base-100/90 backdrop-blur-md border-b border-base-300 px-6 py-3.5 flex items-center justify-between">
-        <div className="flex items-center gap-8">
-          {/* Logo Brand */}
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-primary text-primary-content flex items-center justify-center shadow-xs">
-              <Vote className="w-5 h-5" />
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200/80 flex flex-col justify-between shrink-0 h-screen transition-transform duration-300 ease-in-out lg:static lg:w-64 lg:translate-x-0 ${
+          mobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
+        }`}
+      >
+        <div>
+          {/* Logo Brand + Bouton fermeture mobile */}
+          <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-2xl bg-primary text-primary-content flex items-center justify-center shadow-xs shrink-0">
+                <Vote className="w-5 h-5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-extrabold text-xl tracking-tight font-display text-slate-900">
+                  VERDICT<span className="text-primary">.</span>
+                </span>
+                <span className="text-[10px] font-bold tracking-widest uppercase text-slate-400 -mt-1">
+                  Espace Admin
+                </span>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="font-extrabold text-lg tracking-tight font-display">
-                VERDICT<span className="text-primary">.</span>
-              </span>
-              <span className="text-[10px] font-bold tracking-widest uppercase text-base-content/50 -mt-1">
-                Espace Administration
-              </span>
-            </div>
+
+            {/* Bouton fermeture sur mobile */}
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="btn btn-ghost btn-circle btn-sm lg:hidden text-slate-500 hover:text-slate-800"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
-          {/* Navigation Onglets */}
-          <nav className="hidden md:flex items-center gap-1 bg-base-200/80 p-1 rounded-2xl border border-base-300 text-xs font-semibold">
-            <button
-              onClick={() => setActiveTab("overview")}
-              className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
-                activeTab === "overview" ? "bg-base-100 text-primary shadow-xs" : "text-base-content/60 hover:text-base-content"
-              }`}
-            >
-              Vue Générale
-            </button>
-            <button
-              onClick={() => setActiveTab("events")}
-              className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
-                activeTab === "events" ? "bg-base-100 text-primary shadow-xs" : "text-base-content/60 hover:text-base-content"
-              }`}
-            >
-              Scrutins & Événements ({events.length})
-            </button>
-            <button
-              onClick={() => setActiveTab("tokens")}
-              className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
-                activeTab === "tokens" ? "bg-base-100 text-primary shadow-xs" : "text-base-content/60 hover:text-base-content"
-              }`}
-            >
-              Jetons d'Émargement
-            </button>
-            <button
-              onClick={() => setActiveTab("candidates")}
-              className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
-                activeTab === "candidates" ? "bg-base-100 text-primary shadow-xs" : "text-base-content/60 hover:text-base-content"
-              }`}
-            >
-              Candidats & Critères ({candidates.length})
-            </button>
+          {/* Navigation latérale */}
+          <nav className="p-4 space-y-1.5 overflow-y-auto max-h-[calc(100vh-160px)]">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setMobileMenuOpen(false); // Ferme automatiquement sur mobile
+                  }}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-semibold transition-all cursor-pointer ${
+                    isActive
+                      ? "bg-primary/10 text-primary font-bold shadow-xs"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon className={`w-5 h-5 ${isActive ? "text-primary" : "text-slate-400"}`} />
+                    <span>{item.label}</span>
+                  </div>
+                  {item.badge !== null && item.badge !== undefined && (
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                      isActive ? "bg-primary text-white" : "bg-slate-100 text-slate-600"
+                    }`}>
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </nav>
         </div>
 
-        {/* Actions d'en-tête */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="btn btn-primary btn-sm rounded-xl font-semibold gap-1.5 shadow-xs normal-case cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Nouveau Scrutin</span>
-          </button>
-
-          <button
-            onClick={fetchData}
-            title="Rafraîchir les métriques"
-            className="btn btn-ghost btn-circle btn-sm text-base-content/60 hover:text-base-content cursor-pointer"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          </button>
-
-          <div className="h-5 w-px bg-base-300 mx-1" />
-
+        {/* Pied de sidebar : Bouton Déconnexion */}
+        <div className="p-4 border-t border-slate-100">
           <button
             onClick={handleLogout}
-            className="btn btn-ghost btn-sm rounded-xl text-error gap-1.5 normal-case font-medium hover:bg-error/10 cursor-pointer"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
           >
-            <LogOut className="w-4 h-4" />
-            <span className="hidden sm:inline">Déconnexion</span>
+            <LogOut className="w-5 h-5" />
+            <span>Déconnexion</span>
           </button>
         </div>
-      </header>
+      </aside>
 
       {/* ======================================================== */}
-      {/* CORPS PRINCIPAL DU TABLEAU DE BORD                       */}
+      {/* ZONE CENTRALE DE TRAVAIL                                 */}
       {/* ======================================================== */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-6 md:p-8 space-y-8">
+      <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
         
-        {/* BANNIÈRE RÉSUMÉ & SÉLECTEUR D'ÉVÉNEMENT */}
-        <div className="bg-base-100 rounded-3xl p-6 sm:p-8 border border-base-300 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Gouvernance & Dépouillement Cryptographique Actif</span>
+        {/* HEADER TOP-BAR RESPONSIVE */}
+        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30">
+          
+          {/* Gauche : Bouton Menu Hamburger (sur mobile) + Salutation */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="btn btn-ghost btn-circle btn-sm lg:hidden text-slate-700 hover:bg-slate-100 cursor-pointer"
+              title="Menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
+            <div>
+              <span className="text-[11px] sm:text-xs text-slate-400 capitalize block font-medium">
+                {formattedDate}
+              </span>
+              <h2 className="text-base sm:text-lg font-extrabold text-slate-800 font-display flex items-center gap-1.5 truncate max-w-[190px] sm:max-w-none">
+                <span>{getGreeting()} ,</span>
+                <span className="text-primary truncate">{adminDisplayName}</span>
+                <span className="text-sm sm:text-base shrink-0">👋</span>
+              </h2>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight font-display">
-              Centre de Contrôle des Votes
-            </h1>
-            <p className="text-sm text-base-content/60">
-              Supervisez les taux de participation, générez les listes d'émargement et exportez les procès-verbaux certifiés.
-            </p>
           </div>
 
-          {/* Sélecteur d'événement actif */}
-          {events.length > 0 && (
-            <div className="bg-base-200/80 p-3 rounded-2xl border border-base-300 min-w-[280px]">
-              <label className="text-[11px] font-bold text-base-content/50 uppercase tracking-wider block mb-1.5">
-                Scrutin Sélectionné
-              </label>
-              <select
-                value={selectedEvent?.id || ""}
-                onChange={(e) => {
-                  const ev = events.find(item => String(item.id) === e.target.value);
-                  setSelectedEvent(ev);
-                }}
-                className="select select-bordered select-sm w-full rounded-xl bg-base-100 font-semibold"
-              >
-                {events.map((ev) => (
-                  <option key={ev.id} value={ev.id}>
-                    {ev.title} ({ev.status.toUpperCase()})
-                  </option>
-                ))}
-              </select>
+          {/* Droite : Actions (Créer, Refresh, Profil) */}
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+            {/* Bouton Créer Scrutin */}
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="btn btn-primary btn-sm rounded-xl font-semibold gap-1.5 shadow-xs normal-case cursor-pointer px-2.5 sm:px-3.5"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Nouveau Scrutin</span>
+            </button>
+
+            {/* Rafraîchir les métriques */}
+            <button
+              onClick={fetchData}
+              title="Rafraîchir les données"
+              className="btn btn-ghost btn-circle btn-sm text-slate-500 hover:text-slate-800 hover:bg-slate-100 cursor-pointer"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            </button>
+
+            <div className="h-5 sm:h-6 w-px bg-slate-200 mx-0.5 sm:mx-1" />
+
+            {/* Avatar et Badge Utilisateur */}
+            <div className="flex items-center gap-2.5 pl-0.5">
+              <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-2xl bg-primary text-primary-content font-extrabold flex items-center justify-center text-sm shadow-xs shrink-0">
+                {adminInitial}
+              </div>
+              <div className="hidden md:block text-left">
+                <div className="text-xs sm:text-sm font-bold text-slate-800 leading-tight truncate max-w-[120px]">
+                  {adminDisplayName}
+                </div>
+                <div className="text-[10px] sm:text-[11px] font-semibold text-emerald-600 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Organisateur Certifié
+                </div>
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        </header>
+
+        {/* CORPS PRINCIPAL DU TABLEAU DE BORD */}
+        <main className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl w-full mx-auto">
+
+          {/* BANNIÈRE RÉSUMÉ & SÉLECTEUR D'ÉVÉNEMENT ACTIF */}
+          <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/80 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Gouvernance & Dépouillement Cryptographique Actif</span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight font-display text-slate-900">
+                Centre de Contrôle des Votes
+              </h1>
+              <p className="text-xs text-slate-500">
+                Supervisez les taux de participation, générez les listes d'émargement et exportez les procès-verbaux certifiés.
+              </p>
+            </div>
+
+            {/* Sélecteur d'événement actif */}
+            {events.length > 0 && (
+              <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 w-full md:w-auto min-w-[260px] sm:min-w-[280px]">
+                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                  Scrutin Sélectionné
+                </label>
+                <select
+                  value={selectedEvent?.id || ""}
+                  onChange={(e) => {
+                    const ev = events.find(item => String(item.id) === e.target.value);
+                    setSelectedEvent(ev);
+                  }}
+                  className="select select-bordered select-sm w-full rounded-xl bg-white font-semibold text-xs text-slate-800"
+                >
+                  {events.map((ev) => (
+                    <option key={ev.id} value={ev.id}>
+                      {ev.title} ({ev.status.toUpperCase()})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
 
         {/* ======================================================== */}
         {/* CONTENU SELON L'ONGLET ACTIF                             */}
@@ -1098,7 +1270,129 @@ export default function AdminDashboard() {
           </div>
         )}
 
-      </main>
+        {/* 5. GESTION DU COLLÈGE DES JURÉS ACCRÉDITÉS */}
+        {activeTab === "jurors" && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            {/* Bannière Jurés */}
+            <div className="bg-base-100 rounded-3xl border border-base-300 shadow-xs p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 text-purple-600 text-xs font-semibold mb-1.5">
+                  <Gavel className="w-3.5 h-3.5" />
+                  <span>Sécurité d'Accréditation Juridique</span>
+                </div>
+                <h2 className="text-xl font-bold font-display">
+                  Collège des Jurés Accrédités — {selectedEvent?.title || "Scrutin"}
+                </h2>
+                <p className="text-xs text-base-content/60">
+                  Seuls les membres invités ci-dessous ont le droit d'accéder au barème et de noter ce scrutin.
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setLastInvitedJurorCredentials(null);
+                  setShowJurorModal(true);
+                }}
+                className="btn btn-primary btn-sm rounded-xl font-semibold gap-1.5 normal-case"
+              >
+                <UserPlus className="w-4 h-4" />
+                Inviter un Juré
+              </button>
+            </div>
+
+            {/* Récépissé du dernier juré invité si nouveau mot de passe généré */}
+            {lastInvitedJurorCredentials && (
+              <div className="alert alert-success rounded-3xl p-5 shadow-sm border border-success/30 flex items-start justify-between">
+                <div>
+                  <h4 className="font-bold text-sm">Compte Juré créé avec succès !</h4>
+                  <p className="text-xs mt-0.5">
+                    Transmettez ces identifiants de connexion au juré pour qu'il puisse évaluer les candidats :
+                  </p>
+                  <div className="font-mono text-xs bg-base-100 p-2.5 rounded-xl border border-base-300 mt-2 space-y-1 inline-block">
+                    <div><strong>Email :</strong> {lastInvitedJurorCredentials.email}</div>
+                    <div><strong>Mot de passe temporaire :</strong> {lastInvitedJurorCredentials.password}</div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setLastInvitedJurorCredentials(null)}
+                  className="btn btn-ghost btn-xs rounded-lg"
+                >
+                  Fermer
+                </button>
+              </div>
+            )}
+
+            {/* Tableau des Jurés */}
+            <div className="bg-base-100 rounded-3xl border border-base-300 shadow-xs p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-bold font-display flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary" />
+                  Membres Habilités ({jurors.length})
+                </h3>
+                <span className="text-xs text-base-content/50">
+                  Accès restreint par ID de scrutin
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="table table-zebra w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-base-300 text-base-content/50 uppercase text-[10px] tracking-wider">
+                      <th>Nom & Identité</th>
+                      <th>Email Professionnel</th>
+                      <th>Candidats Notés</th>
+                      <th>Date d'Accréditation</th>
+                      <th className="text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {jurors.map((juror) => (
+                      <tr key={juror.id} className="hover">
+                        <td className="font-bold text-sm flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center font-bold">
+                            {juror.name ? juror.name.charAt(0).toUpperCase() : "J"}
+                          </div>
+                          <div>
+                            <div>{juror.name}</div>
+                            <span className="badge badge-xs badge-neutral font-mono font-medium">JURÉ</span>
+                          </div>
+                        </td>
+                        <td className="font-mono text-base-content/70">{juror.email}</td>
+                        <td>
+                          <span className="badge badge-sm badge-outline badge-primary font-bold">
+                            {juror.evaluated_candidates_count} candidat(s) noté(s)
+                          </span>
+                        </td>
+                        <td className="font-mono text-base-content/50">
+                          {new Date(juror.invited_at).toLocaleString()}
+                        </td>
+                        <td className="text-right">
+                          <button
+                            onClick={() => handleRemoveJuror(juror.id)}
+                            className="btn btn-ghost btn-xs text-error hover:bg-error/10 rounded-lg gap-1 normal-case"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Révoquer
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+
+                    {jurors.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="text-center py-10 text-base-content/50">
+                          Aucun juré accrédité pour ce scrutin. Cliquez sur "Inviter un Juré" pour accréditer les membres du jury.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+        </main>
+      </div>
 
       {/* ======================================================== */}
       {/* MODAL : CRÉATION D'UN NOUVEAU SCRUTIN                    */}
@@ -1468,6 +1762,79 @@ export default function AdminDashboard() {
                   className="btn btn-primary btn-sm rounded-xl font-semibold normal-case px-5"
                 >
                   Générer {newTokenCount} Jetons
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL : ACCRÉDITER / INVITER UN JURÉ                   */}
+      {/* ======================================================== */}
+      {showJurorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+          <div className="bg-base-100 rounded-3xl p-6 sm:p-8 max-w-md w-full border border-base-300 shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold font-display mb-1">Accréditer un Membre du Jury</h3>
+            <p className="text-xs text-base-content/60 mb-5">
+              Ce juré sera habilité à noter le scrutin : <strong>{selectedEvent?.title}</strong>
+            </p>
+
+            <form onSubmit={handleInviteJuror} className="space-y-4 text-xs">
+              <div>
+                <label className="font-semibold block mb-1">Nom complet ou Titre</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Pr. Alexandre Dumas / Dr. Claire Fontaine"
+                  value={newJuror.name}
+                  onChange={(e) => setNewJuror({ ...newJuror, name: e.target.value })}
+                  className="input input-bordered w-full rounded-xl text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold block mb-1">Adresse Email Institutionnelle</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="juror@universite.fr"
+                  value={newJuror.email}
+                  onChange={(e) => setNewJuror({ ...newJuror, email: e.target.value })}
+                  className="input input-bordered w-full rounded-xl text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold block mb-1">
+                  Mot de passe d'accès initial <span className="text-[10px] text-base-content/50 font-normal">(optionnel, auto-généré si vide)</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Laisser vide pour générer aléatoirement"
+                  value={newJuror.password}
+                  onChange={(e) => setNewJuror({ ...newJuror, password: e.target.value })}
+                  className="input input-bordered w-full rounded-xl text-sm font-mono"
+                />
+              </div>
+
+              <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-700">
+                🔒 Dès validation, le juré pourra se connecter via son email et le mot de passe pour accéder à la grille de ce scrutin. Aucun intrus externe ne peut s'attribuer ce droit.
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-base-200">
+                <button
+                  type="button"
+                  onClick={() => setShowJurorModal(false)}
+                  className="btn btn-ghost btn-sm rounded-xl normal-case"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-sm rounded-xl font-semibold normal-case px-5"
+                >
+                  Accréditer le Juré
                 </button>
               </div>
             </form>
