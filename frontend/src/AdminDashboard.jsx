@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  Vote,
-  Users,
+import {Vote, Users,
   ShieldCheck,
   TrendingUp,
   Plus,
@@ -1400,7 +1398,7 @@ export default function AdminDashboard() {
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
           <div className="bg-base-100 rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-base-300 shadow-2xl animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold font-display mb-1">Créer un Nouveau Scrutin</h3>
+            <h3 className="text-lg font-bold font-display mb-1">Créer un nouveau scrutin</h3>
             <p className="text-xs text-base-content/60 mb-6">Paramétrez les critères et le type d'accès aux urnes.</p>
 
             <form onSubmit={handleCreateEvent} className="space-y-4 text-xs">
