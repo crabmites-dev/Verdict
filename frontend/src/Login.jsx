@@ -177,7 +177,7 @@ export default function Login() {
             <Building2 className="w-4 h-4 text-base-content/40" />
             <span>Infrastructure institutionnelle de scrutin</span>
           </div>
-          <span className="font-mono text-base-content/40">v2.4.0</span>
+         {/*} <span className="font-mono text-base-content/40">v2.4.0</span> */}
         </div>
       </div>
 
