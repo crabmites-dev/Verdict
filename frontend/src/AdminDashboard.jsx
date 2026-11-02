@@ -1,44 +1,11 @@
 import { useState, useEffect } from "react";
-import {Vote, Users,
-  ShieldCheck,
-  TrendingUp,
-  Plus,
-  Key,
-  Download,
-  Calendar,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  FileSpreadsheet,
-  FileText,
-  Search,
-  Filter,
-  RefreshCw,
-  Eye,
-  LogOut,
-  Sliders,
-  ChevronRight,
-  Sparkles,
-  Award,
-  Layers,
-  Activity,
-  Send,
-  Copy,
-  Check,
-  UserPlus,
-  Tag,
-  ListPlus,
-  Play,
-  Gavel,
-  Mail,
-  Trash2,
-  LayoutDashboard,
-  Menu,
-  X
+import {Vote, Users, ShieldCheck, TrendingUp, Plus, Key, Download,
+  Calendar, Clock, CheckCircle2, AlertCircle, FileSpreadsheet,
+  FileText, Search, Filter, RefreshCw, Eye, LogOut, Sliders, ChevronRight, Sparkles,
+  Award, Layers, Activity, Send, Copy, Check, UserPlus, Tag, ListPlus, Play,
+  Gavel, Mail, Trash2, LayoutDashboard, Menu, X
 } from "lucide-react";
-import {
-  AreaChart,
-  Area,
+import { AreaChart, Area,
   BarChart,
   Bar,
   PieChart,
@@ -252,7 +219,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // Révoquer un juré
+  // Supprimer un juré
   const handleRemoveJuror = async (jurorId) => {
     if (!selectedEvent) return;
     if (!window.confirm("Êtes-vous sûr de vouloir révoquer l'accréditation de ce juré pour ce scrutin ?")) return;
@@ -288,7 +255,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // Ouvrir / Lancer un scrutin (passer de draft à active)
+  // Ouvrir / Lancer un scrutin 
   const handleLaunchEvent = async (eventId) => {
     try {
       await axios.patch(`http://localhost:5000/api/events/${eventId}/launch`, {}, { withCredentials: true });
@@ -429,10 +396,8 @@ export default function AdminDashboard() {
     { name: "Émargement Restreint", value: events.filter(e => e.auth_mode === "restricted_token").length || 2, color: "#10b981" }
   ];
 
-  // State pour le tiroir mobile responsive
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Date du jour formatée en français
   const formattedDate = new Date().toLocaleDateString("fr-FR", {
     weekday: "long",
     day: "numeric",
@@ -470,7 +435,6 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* OVERLAY SOMBRE SUR MOBILE QUAND LE MENU EST OUVERT */}
       {mobileMenuOpen && (
         <div
           onClick={() => setMobileMenuOpen(false)}
@@ -478,9 +442,7 @@ export default function AdminDashboard() {
         />
       )}
 
-      {/* ======================================================== */}
-      {/* SIDEBAR : FIXE SUR DESKTOP (LG+), DRAWER SUR MOBILE      */}
-      {/* ======================================================== */}
+      {/*CENTRE */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200/80 flex flex-col justify-between shrink-0 h-screen transition-transform duration-300 ease-in-out lg:static lg:w-64 lg:translate-x-0 ${
           mobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
@@ -522,7 +484,7 @@ export default function AdminDashboard() {
                   key={item.id}
                   onClick={() => {
                     setActiveTab(item.id);
-                    setMobileMenuOpen(false); // Ferme automatiquement sur mobile
+                    setMobileMenuOpen(false); 
                   }}
                   className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-semibold transition-all cursor-pointer ${
                     isActive
@@ -547,7 +509,7 @@ export default function AdminDashboard() {
           </nav>
         </div>
 
-        {/* Pied de sidebar : Bouton Déconnexion */}
+        {/* Bouton Déconnexion */}
         <div className="p-4 border-t border-slate-100">
           <button
             onClick={handleLogout}
@@ -559,9 +521,7 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
-      {/* ======================================================== */}
-      {/* ZONE CENTRALE DE TRAVAIL                                 */}
-      {/* ======================================================== */}
+      {/* ZONE CENTRALE */}
       <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
         
         {/* HEADER TOP-BAR RESPONSIVE */}
@@ -637,7 +597,7 @@ export default function AdminDashboard() {
             <div className="space-y-1">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Gouvernance & Dépouillement Cryptographique Actif</span>
+                <span>Gestion et Sécurité des Votes</span>
               </div>
               <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight font-display text-slate-900">
                 Centre de Contrôle des Votes
@@ -671,15 +631,11 @@ export default function AdminDashboard() {
             )}
           </div>
 
-        {/* ======================================================== */}
-        {/* CONTENU SELON L'ONGLET ACTIF                             */}
-        {/* ======================================================== */}
-
-        {/* 1. VUE GÉNÉRALE & ANALYTIQUES */}
+       
+        {/* CONTENU SELON L'ONGLET ACTIF */}
         {activeTab === "overview" && (
           <div className="space-y-8 animate-in fade-in duration-300">
-            
-            {/* 4 CARTES KPI STATISTIQUES */}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               
               <div className="bg-base-100 p-5 rounded-3xl border border-base-300 shadow-xs flex items-center justify-between">

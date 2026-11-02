@@ -12,7 +12,8 @@ import {
   CheckCircle2,
   Building2,
   UserCheck,
-  Vote
+  Vote,
+  DoorClosed
 } from "lucide-react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
@@ -135,7 +136,7 @@ export default function Login() {
         <div className="relative z-10 max-w-lg my-auto py-10">
           
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold mb-6">
-            <Sparkles className="w-3.5 h-3.5" />
+            <DoorClosed className="w-3.5 h-3.5" />
             <span>Portail Sécurisé Administrateurs & Jurys</span>
           </div>
 
