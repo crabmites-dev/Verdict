@@ -1,18 +1,9 @@
 import { useState, useEffect } from "react";
 import { 
-  Lock, 
-  Mail, 
-  AlertCircle, 
-  Eye, 
-  EyeOff, 
-  ArrowRight, 
-  ShieldCheck, 
-  Fingerprint, 
-  Sparkles, 
-  CheckCircle2, 
-  Building2, 
-  User,
-  Vote
+  Lock, Mail, AlertCircle, 
+  Eye, EyeOff, ArrowRight, ShieldCheck, 
+  Fingerprint, CheckCircle2, 
+  Building2, User, Vote
 } from 'lucide-react';
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";

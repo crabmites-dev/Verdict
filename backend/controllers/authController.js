@@ -45,7 +45,6 @@ export const googleLogin = async (req, res) => {
 
         if (userResult.rows.length === 0) {
             const randomPassword = await bcrypt.hash(Math.random().toString(36), 10);
-            // Toute nouvelle organisation s'enregistrant devient Administrateur de son espace
             const insertUser = 'INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role';
             const newUser = await pool.query(insertUser, [name, cleanEmail, randomPassword, 'admin']);
             user = newUser.rows[0];
@@ -73,17 +72,11 @@ export const googleLogin = async (req, res) => {
     }
 };
 
-/**
- * @desc    Inscription d'un nouvel espace Administrateur (Institution / Organisation)
- *          Les jurés sont invités par l'admin, et les votants n'ont pas de compte.
- * @route   POST /api/auth/register
- */
 export const register = async (req, res) => {
     const name = req.body.name?.trim();
     const email = req.body.email?.trim().toLowerCase();
     const password = req.body.password;
     
-    // Sécurité SaaS : l'inscription publique crée obligatoirement un compte 'admin' d'organisation
     const role = 'admin';
 
     if (!name || !email || !password) {

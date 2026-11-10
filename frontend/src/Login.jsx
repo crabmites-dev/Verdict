@@ -46,7 +46,7 @@ export default function Login() {
   // Initialisation du client Google Identity Services
   useEffect(() => {
     const clientId = "517412292411-q9fr8gpn78s5ce7f1k7494tuh2gdiscv.apps.googleusercontent.com";
-    if (window.google?.accounts?.id) {
+    if (window.google?.accounts?.id) { 
       window.google.accounts.id.initialize({
         client_id: clientId,
         callback: async (response) => {
@@ -110,9 +110,8 @@ export default function Login() {
   return (
     <div className="min-h-screen w-full flex bg-base-200 text-base-content selection:bg-primary selection:text-primary-content relative overflow-hidden font-sans">
       
-      {/* ======================================================== */}
       {/* SECTION GAUCHE : Vitrine Identité & Confiance (Thème Winter) */}
-      {/* ======================================================== */}
+     
       <div className="hidden lg:flex lg:w-[48%] xl:w-[50%] flex-col justify-between p-12 xl:p-16 relative bg-base-100 border-r border-base-300">
         
         <div className="absolute inset-0 bg-grid-winter opacity-60 pointer-events-none" />
@@ -182,9 +181,8 @@ export default function Login() {
         </div>
       </div>
 
-      {/* ======================================================== */}
       {/* SECTION DROITE : Formulaire Pro avec Thème Winter        */}
-      {/* ======================================================== */}
+
       <div className="w-full lg:w-[52%] xl:w-[50%] flex flex-col justify-between p-6 sm:p-10 md:p-14 lg:p-12 xl:p-16 relative z-10 bg-base-200/50">
         
         {/* Brand Mobile */}
