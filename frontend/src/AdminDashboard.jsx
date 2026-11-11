@@ -423,7 +423,7 @@ export default function AdminDashboard() {
   const adminInitial = adminDisplayName.charAt(0).toUpperCase();
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-base-content flex font-sans selection:bg-primary selection:text-primary-content relative">
+    <div className="h-screen bg-[#f8fafc] text-base-content flex font-sans selection:bg-primary selection:text-primary-content relative overflow-hidden">
       
       {/* Toast Notification */}
       {notification.message && (
@@ -442,15 +442,15 @@ export default function AdminDashboard() {
         />
       )}
 
-      {/*CENTRE */}
+      {/* SIDEBAR */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200/80 flex flex-col justify-between shrink-0 h-screen transition-transform duration-300 ease-in-out lg:static lg:w-64 lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200/80 flex flex-col justify-between shrink-0 h-full transition-transform duration-300 ease-in-out lg:static lg:w-64 lg:translate-x-0 ${
           mobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
         }`}
       >
-        <div>
+        <div className="flex flex-col flex-1 min-h-0">
           {/* Logo Brand + Bouton fermeture mobile */}
-          <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100">
+          <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100 shrink-0">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-2xl bg-primary text-primary-content flex items-center justify-center shadow-xs shrink-0">
                 <Vote className="w-5 h-5" />
@@ -475,7 +475,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Navigation latérale */}
-          <nav className="p-4 space-y-1.5 overflow-y-auto max-h-[calc(100vh-160px)]">
+          <nav className="p-4 space-y-1.5 overflow-y-auto flex-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -510,7 +510,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Bouton Déconnexion */}
-        <div className="p-4 border-t border-slate-100">
+        <div className="p-4 border-t border-slate-100 shrink-0">
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
@@ -522,10 +522,10 @@ export default function AdminDashboard() {
       </aside>
 
       {/* ZONE CENTRALE */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto">
         
         {/* HEADER TOP-BAR RESPONSIVE */}
-        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30">
+        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30 shrink-0">
           
           {/* Gauche : Bouton Menu Hamburger (sur mobile) + Salutation */}
           <div className="flex items-center gap-3">
