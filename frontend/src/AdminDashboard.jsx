@@ -3,7 +3,7 @@ import {Vote, Users, ShieldCheck, TrendingUp, Plus, Key, Download,
   Calendar, Clock, CheckCircle2, AlertCircle, FileSpreadsheet,
   FileText, Search, Filter, RefreshCw, Eye, LogOut, Sliders, ChevronRight, Sparkles,
   Award, Layers, Activity, Send, Copy, Check, UserPlus, Tag, ListPlus, Play,
-  Gavel, Mail, Trash2, LayoutDashboard, Menu, X, UserLock
+  Gavel, Mail, Trash2, LayoutDashboard, Menu, X, UserLock, Fingerprint
 } from "lucide-react";
 import { AreaChart, Area,
   BarChart,
@@ -452,9 +452,9 @@ export default function AdminDashboard() {
           {/* Logo Brand + Bouton fermeture mobile */}
           <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100 shrink-0">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-2xl bg-primary text-primary-content flex items-center justify-center shadow-xs shrink-0">
-                <Vote className="w-5 h-5" />
-              </div>
+              <div className="h-11 w-11 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-xs">
+            <Fingerprint className="w-5 h-5 text-primary" />
+          </div>
               <div className="flex flex-col">
                 <span className="font-extrabold text-xl tracking-tight font-display text-slate-900">
                   VERDICT<span className="text-primary">.</span>
