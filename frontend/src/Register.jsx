@@ -3,7 +3,7 @@ import {
   Lock, Mail, AlertCircle, 
   Eye, EyeOff, ArrowRight, ShieldCheck, 
   Fingerprint, CheckCircle2, 
-  Building2, User, Vote
+  Building2, User, Vote, BuildingComplexPlus
 } from 'lucide-react';
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
@@ -124,7 +124,7 @@ export default function Register() {
         <div className="relative z-10 max-w-lg my-auto py-10">
           
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold mb-6">
-            <Sparkles className="w-3.5 h-3.5" />
+            <BuildingComplexPlus className="w-3.5 h-3.5" />
             <span>Création d'Espace Institutionnel</span>
           </div>
 
@@ -164,9 +164,8 @@ export default function Register() {
         <div className="relative z-10 pt-6 border-t border-base-300 flex items-center justify-between text-xs text-base-content/50">
           <div className="flex items-center gap-2">
             <Building2 className="w-4 h-4 text-base-content/40" />
-            <span>Déployé pour universités, comités et jurys</span>
+            <span>Infrastructure institutionnelle de scrutin</span>
           </div>
-          <span className="font-mono text-base-content/40">v2.4.0</span>
         </div>
       </div>
 
@@ -266,7 +265,7 @@ export default function Register() {
                   <input
                     type="text"
                     required
-                    placeholder="Ex: Université de Paris - BDE"
+                    placeholder="Ex: Université de Saint Louis - BDE"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="input input-bordered w-full pl-10 rounded-2xl text-sm focus:input-primary transition-all bg-base-100 h-11"
@@ -277,7 +276,7 @@ export default function Register() {
               {/* Adresse e-mail */}
               <div className="form-control space-y-1.5">
                 <label className="text-xs font-semibold text-base-content/80">
-                  Adresse e-mail institutionnelle
+                  Adresse e-mail 
                 </label>
                 <div className="relative flex items-center">
                   <Mail className="w-4 h-4 text-base-content/40 absolute left-3.5 pointer-events-none" />
@@ -295,7 +294,7 @@ export default function Register() {
               {/* Mot de passe */}
               <div className="form-control space-y-1.5">
                 <label className="text-xs font-semibold text-base-content/80">
-                  Mot de passe administrateur
+                  Mot de passe 
                 </label>
                 <div className="relative flex items-center">
                   <Lock className="w-4 h-4 text-base-content/40 absolute left-3.5 pointer-events-none" />

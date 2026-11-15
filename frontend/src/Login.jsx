@@ -13,7 +13,7 @@ import {
   Building2,
   UserCheck,
   Vote,
-  DoorClosed
+  DoorClosedLocked
 } from "lucide-react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
@@ -135,7 +135,7 @@ export default function Login() {
         <div className="relative z-10 max-w-lg my-auto py-10">
           
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold mb-6">
-            <DoorClosed className="w-3.5 h-3.5" />
+            <DoorClosedLocked className="w-3.5 h-3.5" />
             <span>Portail Sécurisé Administrateurs & Jurys</span>
           </div>
 
@@ -176,8 +176,7 @@ export default function Login() {
           <div className="flex items-center gap-2">
             <Building2 className="w-4 h-4 text-base-content/40" />
             <span>Infrastructure institutionnelle de scrutin</span>
-          </div>
-         {/*} <span className="font-mono text-base-content/40">v2.4.0</span> */}
+          </div> 
         </div>
       </div>
 
@@ -272,7 +271,7 @@ export default function Login() {
               {/* Adresse e-mail */}
               <div className="form-control space-y-1.5">
                 <label className="text-xs font-semibold text-base-content/80">
-                  Adresse e-mail institutionnelle
+                  Adresse e-mail 
                 </label>
                 <div className="relative flex items-center">
                   <Mail className="w-4 h-4 text-base-content/40 absolute left-3.5 pointer-events-none" />
