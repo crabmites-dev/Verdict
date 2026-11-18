@@ -274,14 +274,13 @@ export default function Login() {
                   Adresse e-mail 
                 </label>
                 <div className="relative flex items-center">
-                  <Mail className="w-4 h-4 text-base-content/40 absolute left-3.5 pointer-events-none" />
                   <input
                     type="email"
                     required
                     placeholder="admin@organisation.edu"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="input input-bordered w-full pl-10 rounded-2xl text-sm focus:input-primary transition-all bg-base-100 h-11"
+                    className="input input-bordered w-full px-4 rounded-2xl text-sm focus:input-primary transition-all bg-base-100 h-11"
                   />
                 </div>
               </div>
@@ -297,19 +296,18 @@ export default function Login() {
                   </a>
                 </div>
                 <div className="relative flex items-center">
-                  <Lock className="w-4 h-4 text-base-content/40 absolute left-3.5 pointer-events-none" />
                   <input
                     type={showPassword ? "text" : "password"}
                     required
                     placeholder="••••••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="input input-bordered w-full pl-10 pr-10 rounded-2xl text-sm focus:input-primary transition-all bg-base-100 h-11"
+                    className="input input-bordered w-full px-4 pr-11 rounded-2xl text-sm focus:input-primary transition-all bg-base-100 h-11"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 p-1 text-base-content/40 hover:text-base-content transition-colors"
+                    className="absolute right-3.5 p-1 text-base-content/40 hover:text-base-content transition-colors cursor-pointer"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>

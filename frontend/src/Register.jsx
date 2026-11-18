@@ -261,14 +261,13 @@ export default function Register() {
                   Nom de l'organisation ou du responsable
                 </label>
                 <div className="relative flex items-center">
-                  <User className="w-4 h-4 text-base-content/40 absolute left-3.5 pointer-events-none" />
                   <input
                     type="text"
                     required
                     placeholder="Ex: Université de Saint Louis - BDE"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="input input-bordered w-full pl-10 rounded-2xl text-sm focus:input-primary transition-all bg-base-100 h-11"
+                    className="input input-bordered w-full px-4 rounded-2xl text-sm focus:input-primary transition-all bg-base-100 h-11"
                   />
                 </div>
               </div>
@@ -279,14 +278,13 @@ export default function Register() {
                   Adresse e-mail 
                 </label>
                 <div className="relative flex items-center">
-                  <Mail className="w-4 h-4 text-base-content/40 absolute left-3.5 pointer-events-none" />
                   <input
                     type="email"
                     required
                     placeholder="direction@organisation.edu"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="input input-bordered w-full pl-10 rounded-2xl text-sm focus:input-primary transition-all bg-base-100 h-11"
+                    className="input input-bordered w-full px-4 rounded-2xl text-sm focus:input-primary transition-all bg-base-100 h-11"
                   />
                 </div>
               </div>
@@ -297,19 +295,18 @@ export default function Register() {
                   Mot de passe 
                 </label>
                 <div className="relative flex items-center">
-                  <Lock className="w-4 h-4 text-base-content/40 absolute left-3.5 pointer-events-none" />
                   <input
                     type={showPassword ? "text" : "password"}
                     required
                     placeholder="Au moins 6 caractères"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="input input-bordered w-full pl-10 pr-10 rounded-2xl text-sm focus:input-primary transition-all bg-base-100 h-11"
+                    className="input input-bordered w-full px-4 pr-11 rounded-2xl text-sm focus:input-primary transition-all bg-base-100 h-11"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 p-1 text-base-content/40 hover:text-base-content transition-colors"
+                    className="absolute right-3.5 p-1 text-base-content/40 hover:text-base-content transition-colors cursor-pointer"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
