@@ -267,7 +267,7 @@ export default function Register() {
                     placeholder="Ex: Université de Saint Louis - BDE"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="input input-bordered w-full px-4 rounded-2xl text-sm focus:input-primary transition-all bg-base-100 h-11"
+                    className="input input-bordered w-full px-4 rounded-2xl text-sm focus:input-primary focus:outline-none transition-all bg-base-100 h-11"
                   />
                 </div>
               </div>
@@ -284,7 +284,7 @@ export default function Register() {
                     placeholder="direction@organisation.edu"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="input input-bordered w-full px-4 rounded-2xl text-sm focus:input-primary transition-all bg-base-100 h-11"
+                    className="input input-bordered w-full px-4 rounded-2xl text-sm focus:input-primary focus:outline-none transition-all bg-base-100 h-11"
                   />
                 </div>
               </div>
@@ -301,7 +301,7 @@ export default function Register() {
                     placeholder="Au moins 6 caractères"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="input input-bordered w-full px-4 pr-11 rounded-2xl text-sm focus:input-primary transition-all bg-base-100 h-11"
+                    className="input input-bordered w-full px-4 pr-11 rounded-2xl text-sm focus:input-primary focus:outline-none transition-all bg-base-100 h-11"
                   />
                   <button
                     type="button"
