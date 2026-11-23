@@ -165,7 +165,7 @@ export default function LandingPage() {
             {/* Carte 2 : Juré */}
             <div className="bg-base-100 rounded-3xl p-8 border border-base-300 shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow">
               <div className="space-y-4">
-                <div className="h-12 w-12 rounded-2xl bg-purple-500/10 text-purple-600 flex items-center justify-center">
+                <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
                   <Scale className="w-6 h-6" />
                 </div>
                 <h3 className="text-xl font-bold font-display">Le Juré (Barème & Critères)</h3>

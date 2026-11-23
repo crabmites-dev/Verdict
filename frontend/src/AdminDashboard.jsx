@@ -392,7 +392,7 @@ export default function AdminDashboard() {
   ];
 
   const distributionModeData = [
-    { name: "Public Ouvert", value: events.filter(e => e.auth_mode === "open_public").length || 3, color: "#0069ff" },
+    { name: "Public Ouvert", value: events.filter(e => e.auth_mode === "open_public").length || 3, color: "#7c3aed" },
     { name: "Émargement Restreint", value: events.filter(e => e.auth_mode === "restricted_token").length || 2, color: "#10b981" }
   ];
 
@@ -715,15 +715,15 @@ export default function AdminDashboard() {
                     <AreaChart data={votesOverTime} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <defs>
                         <linearGradient id="colorPublic" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#0069ff" stopOpacity={0.35}/>
-                          <stop offset="95%" stopColor="#0069ff" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.35}/>
+                          <stop offset="95%" stopColor="#7c3aed" stopOpacity={0}/>
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                       <XAxis dataKey="hour" stroke="#94a3b8" fontSize={12} tickLine={false} />
                       <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} />
                       <Tooltip contentStyle={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1px solid #e2e8f0" }} />
-                      <Area type="monotone" dataKey="public" name="Votes Public" stroke="#0069ff" strokeWidth={3} fillOpacity={1} fill="url(#colorPublic)" />
+                      <Area type="monotone" dataKey="public" name="Votes Public" stroke="#7c3aed" strokeWidth={3} fillOpacity={1} fill="url(#colorPublic)" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -1217,7 +1217,7 @@ export default function AdminDashboard() {
             {/* Bannière Jurés */}
             <div className="bg-base-100 rounded-3xl border border-base-300 shadow-xs p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 text-purple-600 text-xs font-semibold mb-1.5">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-1.5">
                   <Gavel className="w-3.5 h-3.5" />
                   <span>Sécurité d'Accréditation Juridique</span>
                 </div>
@@ -1290,7 +1290,7 @@ export default function AdminDashboard() {
                     {jurors.map((juror) => (
                       <tr key={juror.id} className="hover">
                         <td className="font-bold text-sm flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center font-bold">
+                          <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
                             {juror.name ? juror.name.charAt(0).toUpperCase() : "J"}
                           </div>
                           <div>
@@ -1759,7 +1759,7 @@ export default function AdminDashboard() {
                 />
               </div>
 
-              <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-700">
+              <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 text-xs text-primary">
                 🔒 Dès validation, le juré pourra se connecter via son email et le mot de passe pour accéder à la grille de ce scrutin. Aucun intrus externe ne peut s'attribuer ce droit.
               </div>
 
