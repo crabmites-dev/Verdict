@@ -413,10 +413,10 @@ export default function AdminDashboard() {
 
   const navItems = [
     { id: "overview", label: "Vue d'ensemble", icon: LayoutDashboard },
-    { id: "events", label: "Scrutins & Événements", icon: Layers, badge: events.length },
-    { id: "tokens", label: "Jetons d'Émargement", icon: Key, badge: tokenStats.total ? `${tokenStats.used}/${tokenStats.total}` : null },
-    { id: "candidates", label: "Candidats & Critères", icon: Tag, badge: candidates.length },
-    { id: "jurors", label: "Collège des Jurés", icon: Gavel, badge: jurors.length },
+    { id: "events", label: "Scrutins & Événements", icon: Layers },
+    { id: "tokens", label: "Jetons d'Émargement", icon: Key },
+    { id: "candidates", label: "Candidats & Critères", icon: Tag },
+    { id: "jurors", label: "Collège des Jurés", icon: Gavel },
   ];
 
   const adminDisplayName = currentUser?.name || "Administrateur";
@@ -486,23 +486,14 @@ export default function AdminDashboard() {
                     setActiveTab(item.id);
                     setMobileMenuOpen(false); 
                   }}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-semibold transition-all cursor-pointer ${
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all cursor-pointer ${
                     isActive
                       ? "bg-primary/10 text-primary font-bold shadow-xs"
                       : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <Icon className={`w-5 h-5 ${isActive ? "text-primary" : "text-slate-400"}`} />
-                    <span>{item.label}</span>
-                  </div>
-                  {item.badge !== null && item.badge !== undefined && (
-                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                      isActive ? "bg-primary text-white" : "bg-slate-100 text-slate-600"
-                    }`}>
-                      {item.badge}
-                    </span>
-                  )}
+                  <Icon className={`w-5 h-5 ${isActive ? "text-primary" : "text-slate-400"}`} />
+                  <span>{item.label}</span>
                 </button>
               );
             })}
