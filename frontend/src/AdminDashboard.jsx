@@ -489,7 +489,7 @@ export default function AdminDashboard() {
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all cursor-pointer ${
                     isActive
                       ? "bg-primary/10 text-primary font-bold shadow-xs"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
+                      : "text-slate-600 hover:text-primary-900 hover:bg-slate-100/70"
                   }`}
                 >
                   <Icon className={`w-5 h-5 ${isActive ? "text-primary" : "text-slate-400"}`} />
@@ -518,7 +518,7 @@ export default function AdminDashboard() {
         {/* HEADER TOP-BAR RESPONSIVE */}
         <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30 shrink-0">
           
-          {/* Gauche : Bouton Menu Hamburger (sur mobile) + Salutation */}
+          {/* Bouton Menu Gauche */}
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileMenuOpen(true)}
@@ -624,9 +624,7 @@ export default function AdminDashboard() {
                   <span className="text-3xl font-extrabold font-display mt-1 block">
                     {stats?.total_public_votes?.toLocaleString() || "0"}
                   </span>
-                  <span className="text-xs text-success font-medium flex items-center gap-1 mt-1">
-                    <TrendingUp className="w-3.5 h-3.5" /> +14.2% participation
-                  </span>
+                  
                 </div>
                 <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
                   <Vote className="w-6 h-6" />
@@ -696,9 +694,7 @@ export default function AdminDashboard() {
                     <h3 className="text-base font-bold font-display">Affluence & Dépouillement en Temps Réel</h3>
                     <p className="text-xs text-base-content/60">Évolution de la participation tout au long du scrutin</p>
                   </div>
-                  <span className="badge badge-success badge-sm gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Live
-                  </span>
+                  
                 </div>
 
                 <div className="h-72 w-full">
