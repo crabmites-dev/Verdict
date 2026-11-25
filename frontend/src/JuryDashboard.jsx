@@ -7,13 +7,13 @@ import {
   CheckCircle2,
   AlertCircle,
   Clock,
-  Sparkles,
   ChevronRight,
   ShieldCheck,
   Send,
   LogOut,
   RefreshCw,
-  Info
+  Info,
+  Fingerprint
 } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -169,8 +169,8 @@ export default function JuryDashboard() {
       {/* HEADER JURY */}
       <header className="sticky top-0 z-40 bg-base-100/90 backdrop-blur-md border-b border-base-300 px-6 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-2xl bg-primary text-primary-content flex items-center justify-center shadow-xs">
-            <Award className="w-5 h-5" />
+          <div className="h-11 w-11 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-xs">
+            <Fingerprint className="w-5 h-5 text-primary" />
           </div>
           <div className="flex flex-col">
             <span className="font-extrabold text-lg tracking-tight font-display">

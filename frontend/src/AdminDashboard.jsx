@@ -1726,7 +1726,7 @@ export default function AdminDashboard() {
                 <input
                   type="email"
                   required
-                  placeholder="juror@universite.fr"
+                  placeholder="ibrahim21@gmail.fr"
                   value={newJuror.email}
                   onChange={(e) => setNewJuror({ ...newJuror, email: e.target.value })}
                   className="input input-bordered w-full rounded-xl text-sm"
