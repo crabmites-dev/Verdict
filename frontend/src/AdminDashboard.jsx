@@ -684,10 +684,10 @@ export default function AdminDashboard() {
 
             </div>
 
-            {/* SECTION GRAPHIQUES : RECHARTS */}
+            {/* SECTION GRAPHIQUES */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               
-              {/* Graphique 1 : Dynamique temporelle des votes */}
+              {/* Graphique 1  */}
               <div className="lg:col-span-2 bg-base-100 p-6 sm:p-7 rounded-3xl border border-base-300 shadow-xs">
                 <div className="flex items-center justify-between mb-6">
                   <div>
@@ -716,7 +716,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Graphique 2 : Répartition des modes de scrutin */}
+              {/* Graphique 2 */}
               <div className="bg-base-100 p-6 sm:p-7 rounded-3xl border border-base-300 shadow-xs flex flex-col justify-between">
                 <div>
                   <h3 className="text-base font-bold font-display mb-1">Architecture des Scrutins</h3>
@@ -1714,7 +1714,7 @@ export default function AdminDashboard() {
                 <input
                   type="text"
                   required
-                  placeholder="Ex: Pr. Alexandre Dumas / Dr. Claire Fontaine"
+                  placeholder="Ex: Mr. Ibrahim Diallo"
                   value={newJuror.name}
                   onChange={(e) => setNewJuror({ ...newJuror, name: e.target.value })}
                   className="input input-bordered w-full rounded-xl text-sm"
@@ -1722,7 +1722,7 @@ export default function AdminDashboard() {
               </div>
 
               <div>
-                <label className="font-semibold block mb-1">Adresse Email Institutionnelle</label>
+                <label className="font-semibold block mb-1">Adresse Email</label>
                 <input
                   type="email"
                   required
