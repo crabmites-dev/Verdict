@@ -172,8 +172,8 @@ export default function VoterScreen() {
       {/* HEADER ÉLECTEUR ÉPURÉ */}
       <header className="sticky top-0 z-40 bg-base-100/90 backdrop-blur-md border-b border-base-300 px-6 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-2xl bg-primary text-primary-content flex items-center justify-center shadow-xs">
-            <Vote className="w-5 h-5" />
+           <div className="h-11 w-11 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-xs">
+            <Fingerprint className="w-5 h-5 text-primary" />
           </div>
           <div className="flex flex-col">
             <span className="font-extrabold text-lg tracking-tight font-display">
@@ -255,7 +255,7 @@ export default function VoterScreen() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="space-y-1.5">
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
-                    <Sparkles className="w-3.5 h-3.5" />
+                    <Vote className="w-3.5 h-3.5" />
                     <span>
                       {isRestricted ? "Scrutin Institutionnel Privé" : "Consultation & Scrutin Ouvert"}
                     </span>

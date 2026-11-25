@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import {
+  Fingerprint,
   Trophy,
   Award,
   Vote,
@@ -84,8 +85,8 @@ export default function ResultsScreen() {
       {/* HEADER OFFICIEL */}
       <header className="sticky top-0 z-40 bg-base-100/90 backdrop-blur-md border-b border-base-300 px-6 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center shadow-xs">
-            <Trophy className="w-5 h-5" />
+          <div className="h-11 w-11 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-xs">
+            <Fingerprint className="w-5 h-5 text-primary" />
           </div>
           <div className="flex flex-col">
             <span className="font-extrabold text-lg tracking-tight font-display">
@@ -120,7 +121,7 @@ export default function ResultsScreen() {
         <div className="bg-base-100 rounded-3xl p-6 sm:p-8 border border-base-300 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="space-y-1.5">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 text-xs font-semibold">
-              <Sparkles className="w-3.5 h-3.5" />
+              <Award className="w-3.5 h-3.5" />
               <span>Dépouillement Certifié & Classement Consolidé</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight font-display">
@@ -181,7 +182,7 @@ export default function ResultsScreen() {
               </div>
             )}
 
-            {/* 1ÈRE PLACE (VAINQUEUR AU CENTRE, PLUS HAUT ET VALORISÉ) */}
+            {/* 1ÈRE PLACE  */}
             {top1 && (
               <div className="order-1 md:order-2 bg-gradient-to-b from-amber-500/10 via-base-100 to-base-100 rounded-3xl p-8 border-2 border-amber-400 shadow-xl text-center relative flex flex-col items-center transform md:-translate-y-4">
                 <div className="absolute -top-4 px-3 py-1 bg-amber-500 text-white rounded-full text-[11px] font-bold flex items-center gap-1 shadow-sm">
@@ -314,9 +315,6 @@ export default function ResultsScreen() {
       <footer className="w-full max-w-5xl mx-auto py-6 px-6 text-center text-[11px] text-base-content/50 border-t border-base-300 flex flex-col sm:flex-row items-center justify-between gap-2">
         <span>&copy; {new Date().getFullYear()} Verdict Voting Systems • Délibération finale certifiée</span>
         <div className="flex items-center gap-3">
-          <span>Formule Pondérée Mathématique</span>
-          <span>•</span>
-          <span>Procès-Verbal Inviolable</span>
         </div>
       </footer>
 
